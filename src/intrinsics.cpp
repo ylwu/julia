@@ -390,8 +390,8 @@ static Value *emit_pointerref(jl_value_t *e, jl_value_t *i, jl_codectx_t *ctx)
         jl_error("pointerref: invalid index type");
     }
     //Value *idx = builder.CreateIntCast(auto_unbox(i,ctx), T_size, false); //TODO: use this instead (and remove assert jl_is_long)?
-    Value *idx = emit_unbox(T_size, T_psize, emit_unboxed(i, ctx));
-    Value *im1 = builder.CreateSub(idx, ConstantInt::get(T_size, 1));
+    Value *idx = emit_unbox(T_long, T_plong, emit_unboxed(i, ctx));
+    Value *im1 = builder.CreateSub(idx, ConstantInt::get(T_long, 1));
     return typed_load(auto_unbox(e, ctx), im1, ety, ctx);
 }
 
@@ -411,8 +411,8 @@ static Value *emit_pointerset(jl_value_t *e, jl_value_t *x, jl_value_t *i, jl_co
     if ((jl_bits_type_t*)expr_type(i, ctx) != jl_long_type) {
         jl_error("pointerref: invalid index type");
     }
-    Value *idx = emit_unbox(T_size, T_psize, emit_unboxed(i, ctx));
-    Value *im1 = builder.CreateSub(idx, ConstantInt::get(T_size, 1));
+    Value *idx = emit_unbox(T_long, T_plong, emit_unboxed(i, ctx));
+    Value *im1 = builder.CreateSub(idx, ConstantInt::get(T_long, 1));
     return typed_store(auto_unbox(e,ctx), im1, emit_unboxed(x,ctx), ety, ctx);
 }
 

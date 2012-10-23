@@ -946,7 +946,7 @@ void jl_init_serializer(void)
                      jl_box_int32(24), jl_box_int32(25), jl_box_int32(26),
                      jl_box_int32(27), jl_box_int32(28), jl_box_int32(29),
                      jl_box_int32(30), jl_box_int32(31), jl_box_int32(32),
-#ifndef __LP64__
+#if 0
                      jl_box_int32(33), jl_box_int32(34), jl_box_int32(35),
                      jl_box_int32(36), jl_box_int32(37), jl_box_int32(38),
                      jl_box_int32(39), jl_box_int32(40), jl_box_int32(41),
@@ -970,7 +970,7 @@ void jl_init_serializer(void)
                      jl_box_int64(24), jl_box_int64(25), jl_box_int64(26),
                      jl_box_int64(27), jl_box_int64(28), jl_box_int64(29),
                      jl_box_int64(30), jl_box_int64(31), jl_box_int64(32),
-#ifdef __LP64__
+#if 1
                      jl_box_int64(33), jl_box_int64(34), jl_box_int64(35),
                      jl_box_int64(36), jl_box_int64(37), jl_box_int64(38),
                      jl_box_int64(39), jl_box_int64(40), jl_box_int64(41),

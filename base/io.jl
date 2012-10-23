@@ -34,14 +34,14 @@ convert(T::Type{Ptr{Void}}, s::IOStream) = convert(T, s.ios)
 
 show(io, s::IOStream) = print(io, "IOStream(", s.name, ")")
 
-fd(s::IOStream) = ccall(:jl_ios_fd, Int, (Ptr{Void},), s.ios)
+fd(s::IOStream) = ccall(:jl_ios_fd, Int32, (Ptr{Void},), s.ios)
 
 close(s::IOStream) = ccall(:ios_close, Void, (Ptr{Void},), s.ios)
 
 flush(s::IOStream) = ccall(:ios_flush, Void, (Ptr{Void},), s.ios)
 
 truncate(s::IOStream, n::Integer) =
-    ccall(:ios_trunc, Uint, (Ptr{Void}, Uint), s.ios, n)
+    ccall(:ios_trunc, Uint32, (Ptr{Void}, Uint32), s.ios, n)
 
 seek(s::IOStream, n::Integer) =
     (ccall(:ios_seek, FileOffset, (Ptr{Void}, FileOffset), s.ios, n)==0 ||
@@ -64,7 +64,7 @@ eof(s::IOStream) = bool(ccall(:jl_ios_eof, Int32, (Ptr{Void},), s.ios))
 # "own" means the descriptor will be closed with the IOStream
 function fdio(name::String, fd::Integer, own::Bool)
     s = IOStream(name)
-    ccall(:ios_fd, Void, (Ptr{Uint8}, Int, Int32, Int32),
+    ccall(:ios_fd, Void, (Ptr{Uint8}, Int32, Int32, Int32),
           s.ios, fd, 0, own);
     return s
 end
@@ -112,7 +112,7 @@ end
 
 function memio(x::Integer, finalize::Bool)
     s = IOStream("<memio>", finalize)
-    ccall(:ios_mem, Ptr{Void}, (Ptr{Uint8}, Uint), s.ios, x)
+    ccall(:ios_mem, Ptr{Void}, (Ptr{Uint8}, Uint32), s.ios, x)
     return s
 end
 memio(x::Integer) = memio(x, true)
@@ -198,7 +198,7 @@ write(s::IOStream, b::Uint8) = ccall(:ios_putc, Int32, (Int32, Ptr{Void}), b, s.
 
 function write{T}(s::IOStream, a::Array{T})
     if isa(T,BitsKind)
-        ccall(:ios_write, Uint, (Ptr{Void}, Ptr{Void}, Uint),
+        ccall(:ios_write, Uint32, (Ptr{Void}, Ptr{Void}, Uint32),
               s.ios, a, numel(a)*sizeof(T))
     else
         invoke(write, (Any, Array), s, a)
@@ -206,7 +206,7 @@ function write{T}(s::IOStream, a::Array{T})
 end
 
 function write(s::IOStream, p::Ptr, nb::Integer)
-    ccall(:ios_write, Uint, (Ptr{Void}, Ptr{Void}, Uint), s.ios, p, nb)
+    ccall(:ios_write, Uint32, (Ptr{Void}, Ptr{Void}, Uint32), s.ios, p, nb)
 end
 
 function write{T,N,A<:Array}(s::IOStream, a::SubArray{T,N,A})
@@ -236,8 +236,8 @@ end
 function read{T<:Union(Int8,Uint8,Int16,Uint16,Int32,Uint32,Int64,Uint64,Int128,Uint128,Float32,Float64,Complex64,Complex128)}(s::IOStream, a::Array{T})
     if isa(T,BitsKind)
         nb = numel(a)*sizeof(T)
-        if ccall(:ios_readall, Uint,
-                 (Ptr{Void}, Ptr{Void}, Uint), s.ios, a, nb) < nb
+        if ccall(:ios_readall, Uint32,
+                 (Ptr{Void}, Ptr{Void}, Uint32), s.ios, a, nb) < nb
             throw(EOFError())
         end
         a
@@ -301,7 +301,7 @@ end
 
 function readall(s::IOStream)
     dest = memio()
-    ccall(:ios_copyall, Uint, (Ptr{Void}, Ptr{Void}), dest.ios, s.ios)
+    ccall(:ios_copyall, Uint32, (Ptr{Void}, Ptr{Void}), dest.ios, s.ios)
     takebuf_string(dest)
 end
 readall(filename::String) = open(readall, filename)

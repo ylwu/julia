@@ -79,7 +79,7 @@ function compile(pattern::String, options::Integer)
     end
     size = info(re_ptr, C_NULL, INFO_SIZE, Int32)
     regex = Array(Uint8,size)
-    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), regex, re_ptr, size)
+    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint32), regex, re_ptr, size)
     regex
 end
 

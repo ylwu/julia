@@ -201,7 +201,7 @@ static jl_value_t *scm_to_julia_(value_t e)
         }
         if (isfixnum(e)) {
             int64_t ne = numval(e);
-#ifdef __LP64__
+#if 1
             return (jl_value_t*)jl_box_int64(ne);
 #else
             if (ne > S32_MAX || ne < S32_MIN)
@@ -210,7 +210,7 @@ static jl_value_t *scm_to_julia_(value_t e)
 #endif
         }
         uint64_t n = toulong(e, "scm_to_julia");
-#ifdef __LP64__
+#if 1
         return (jl_value_t*)jl_box_int64((int64_t)n);
 #else
         if (n > S32_MAX)

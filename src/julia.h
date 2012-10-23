@@ -166,7 +166,7 @@ typedef struct _jl_lambda_info_t {
     jl_array_t *specializations;
     int8_t inferred;
     jl_value_t *file;
-    ptrint_t line;
+    int64_t line;
     struct _jl_module_t *module;
 
     // hidden fields:
@@ -314,7 +314,7 @@ typedef struct _jl_methtable_t {
     jl_methlist_t *cache;
     jl_array_t *cache_arg1;
     jl_array_t *cache_targ;
-    ptrint_t max_args;  // max # of non-vararg arguments in a signature
+    int64_t max_args;  // max # of non-vararg arguments in a signature
 #ifdef JL_GF_PROFILE
     int ncalls;
 #endif
@@ -700,7 +700,7 @@ uint64_t jl_unbox_uint64(jl_value_t *v);
 float jl_unbox_float32(jl_value_t *v);
 double jl_unbox_float64(jl_value_t *v);
 
-#ifdef __LP64__
+#if 1
 #define jl_box_long(x)   jl_box_int64(x)
 #define jl_unbox_long(x) jl_unbox_int64(x)
 #define jl_is_long(x)    jl_is_int64(x)

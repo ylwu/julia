@@ -109,7 +109,7 @@ gc_disable() = ccall(:jl_gc_disable, Void, ())
 bytestring(str::ByteString) = str
 
 # return an integer such that object_id(x)==object_id(y) if is(x,y)
-object_id(x::ANY) = ccall(:jl_object_id, Uint, (Any,), x)
+object_id(x::ANY) = ccall(:jl_object_id, Uint32, (Any,), x)
 
 const isimmutable = x->(isa(x,Tuple) || isa(x,Symbol) ||
                         isa(typeof(x),BitsKind))
@@ -157,18 +157,18 @@ Array{N}(T, d::NTuple{N,Int}) =
      ccall(:jl_new_array, Any, (Any,Any), AT, d)::AT)
 
 Array{T}(::Type{T}, m::Int) =
-    ccall(:jl_alloc_array_1d, Array{T,1}, (Any,Int), Array{T,1}, m)
+    ccall(:jl_alloc_array_1d, Array{T,1}, (Any,Int32), Array{T,1}, m)
 Array{T}(::Type{T}, m::Int,n::Int) =
-    ccall(:jl_alloc_array_2d, Array{T,2}, (Any,Int,Int), Array{T,2}, m,n)
+    ccall(:jl_alloc_array_2d, Array{T,2}, (Any,Int32,Int32), Array{T,2}, m,n)
 Array{T}(::Type{T}, m::Int,n::Int,o::Int) =
-    ccall(:jl_alloc_array_3d, Array{T,3}, (Any,Int,Int,Int), Array{T,3}, m,n,o)
+    ccall(:jl_alloc_array_3d, Array{T,3}, (Any,Int32,Int32,Int32), Array{T,3}, m,n,o)
 
 Array(T, d::Int...) = Array(T, d)
 Array(T, d::Integer...) = Array(T, convert((Int...), d))
 
 Array{T}(::Type{T}, m::Integer) =
-    ccall(:jl_alloc_array_1d, Array{T,1}, (Any,Int), Array{T,1}, m)
+    ccall(:jl_alloc_array_1d, Array{T,1}, (Any,Int32), Array{T,1}, m)
 Array{T}(::Type{T}, m::Integer,n::Integer) =
-    ccall(:jl_alloc_array_2d, Array{T,2}, (Any,Int,Int), Array{T,2}, m, n)
+    ccall(:jl_alloc_array_2d, Array{T,2}, (Any,Int32,Int32), Array{T,2}, m, n)
 Array{T}(::Type{T}, m::Integer,n::Integer,o::Integer) =
-    ccall(:jl_alloc_array_3d, Array{T,3}, (Any,Int,Int,Int), Array{T,3}, m, n, o)
+    ccall(:jl_alloc_array_3d, Array{T,3}, (Any,Int32,Int32,Int32), Array{T,3}, m, n, o)

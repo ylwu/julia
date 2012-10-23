@@ -314,7 +314,7 @@ function copy_to{T<:LapackType}(dest::Ptr{T}, src::Ptr{T}, n::Integer)
     if n < 200
         Blas.copy!(n, src, 1, dest, 1)
     else
-        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), dest, src, n*sizeof(T))
+        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint32), dest, src, n*sizeof(T))
     end
     return dest
 end

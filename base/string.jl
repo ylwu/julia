@@ -39,7 +39,7 @@ end
 
 function bytestring(p::Ptr{Uint8},len::Int)
     p == C_NULL ? error("cannot convert NULL to string") :
-    ccall(:jl_pchar_to_string, ByteString, (Ptr{Uint8},Int), p, len)
+    ccall(:jl_pchar_to_string, ByteString, (Ptr{Uint8},Int32), p, len)
 end
 
 convert(::Type{Array{Uint8,1}}, s::String) = bytestring(s).data
@@ -299,7 +299,7 @@ isequal(a::ByteString, b::ByteString) = length(a)==length(b) && cmp(a,b)==0
 
 charwidth(c::Char) = max(0,int(ccall(:wcwidth, Int32, (Char,), c)))
 strwidth(s::String) = (w=0; for c in s; w += charwidth(c); end; w)
-strwidth(s::ByteString) = ccall(:u8_strwidth, Int, (Ptr{Uint8},), s.data)
+strwidth(s::ByteString) = ccall(:u8_strwidth, Int32, (Ptr{Uint8},), s.data)
 # TODO: implement and use u8_strnwidth that takes a length argument
 
 ## generic string uses only length and next ##
@@ -684,7 +684,7 @@ unescape_string(s::String) = sprint(length(s), print_unescaped, s)
 ## checking UTF-8 & ACSII validity ##
 
 byte_string_classify(s::ByteString) =
-    ccall(:u8_isvalid, Int32, (Ptr{Uint8}, Int), s.data, length(s))
+    ccall(:u8_isvalid, Int32, (Ptr{Uint8}, Int32), s.data, length(s))
     # 0: neither valid ASCII nor UTF-8
     # 1: valid ASCII
     # 2: valid UTF-8
@@ -1227,7 +1227,7 @@ function memchr(a::Array{Uint8,1}, b::Integer, i::Integer)
     n = length(a)
     if i > n return i == n+1 ? 0 : error(BoundsError) end
     p = pointer(a)
-    q = ccall(:memchr, Ptr{Uint8}, (Ptr{Uint8}, Int32, Uint), p+i-1, b, n-i+1)
+    q = ccall(:memchr, Ptr{Uint8}, (Ptr{Uint8}, Int32, Uint32), p+i-1, b, n-i+1)
     q == C_NULL ? 0 : int(q-p+1)
 end
 memchr(a::Array{Uint8,1}, b::Integer) = memchr(a,b,1)

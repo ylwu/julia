@@ -323,7 +323,7 @@ static void emit_typecheck(Value *x, jl_value_t *type, const std::string &msg,
 
 static Value *emit_bounds_check(Value *i, Value *len, jl_codectx_t *ctx)
 {
-    Value *im1 = builder.CreateSub(i, ConstantInt::get(T_size, 1));
+    Value *im1 = builder.CreateSub(i, ConstantInt::get(T_long, 1));
     Value *ok = builder.CreateICmpULT(im1, len);
     raise_exception_unless(ok, jlboundserr_var, ctx);
     return im1;
@@ -482,7 +482,7 @@ static Value *emit_tuplelen(Value *t)
 #ifdef __LP64__
     return builder.CreatePtrToInt(lenbits, T_int64);
 #else
-    return builder.CreatePtrToInt(lenbits, T_int32);
+    return builder.CreateSExt(builder.CreatePtrToInt(lenbits, T_int32), T_int64);
 #endif
 }
 
@@ -492,7 +492,7 @@ static Value *emit_n_varargs(jl_codectx_t *ctx)
     int nreq = ctx->nReqArgs;
     Value *valen = builder.CreateSub((Value*)ctx->argCount,
                                      ConstantInt::get(T_int32, nreq));
-#ifdef __LP64__
+#if 1
     return builder.CreateSExt(valen, T_int64);
 #else
     return valen;
@@ -509,7 +509,7 @@ static Value *emit_arraysize(Value *t, Value *dim)
     Value *dbits =
         emit_nthptr(t, builder.CreateAdd(dim,
                                          ConstantInt::get(dim->getType(), o)));
-    return builder.CreatePtrToInt(dbits, T_size);
+    return builder.CreateSExt(builder.CreatePtrToInt(dbits, T_size),T_int64);
 }
 
 static Value *emit_arraysize(Value *t, int dim)
@@ -520,7 +520,7 @@ static Value *emit_arraysize(Value *t, int dim)
 static Value *emit_arraylen(Value *t)
 {
     Value *lenbits = emit_nthptr(t, 2);
-    return builder.CreatePtrToInt(lenbits, T_size);
+    return builder.CreateSExt(builder.CreatePtrToInt(lenbits, T_size),T_int64);
 }
 
 static Value *emit_arrayptr(Value *t)
@@ -537,17 +537,17 @@ static Value *bitstype_pointer(Value *x)
 static Value *emit_array_nd_index(Value *a, size_t nd, jl_value_t **args,
                                   size_t nidxs, jl_codectx_t *ctx)
 {
-    Value *i = ConstantInt::get(T_size, 0);
-    Value *stride = ConstantInt::get(T_size, 1);
+    Value *i = ConstantInt::get(T_long, 0);
+    Value *stride = ConstantInt::get(T_long, 1);
     BasicBlock *failBB = BasicBlock::Create(getGlobalContext(), "oob");
     BasicBlock *endBB = BasicBlock::Create(getGlobalContext(), "idxend");
     for(size_t k=0; k < nidxs; k++) {
-        Value *ii = emit_unbox(T_size, T_psize, emit_unboxed(args[k], ctx));
-        ii = builder.CreateSub(ii, ConstantInt::get(T_size, 1));
+        Value *ii = emit_unbox(T_long, T_plong, emit_unboxed(args[k], ctx));
+        ii = builder.CreateSub(ii, ConstantInt::get(T_long, 1));
         i = builder.CreateAdd(i, builder.CreateMul(ii, stride));
         if (k < nidxs-1) {
             Value *d =
-                k >= nd ? ConstantInt::get(T_size, 1) : emit_arraysize(a, k+1);
+                k >= nd ? ConstantInt::get(T_long, 1) : emit_arraysize(a, k+1);
             BasicBlock *okBB = BasicBlock::Create(getGlobalContext(), "ib");
             // if !(i < d) goto error
             builder.CreateCondBr(builder.CreateICmpULT(ii, d), okBB, failBB);

@@ -41,7 +41,7 @@ float(x)   = convert(FloatingPoint,   x)
 
 ## conversions from floating-point ##
 
-if WORD_SIZE == 64
+if WORD_SIZE == 64 || true
     iround(x::Float32) = iround(float64(x))
     itrunc(x::Float32) = itrunc(float64(x))
 else

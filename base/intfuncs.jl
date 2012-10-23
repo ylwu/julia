@@ -177,7 +177,7 @@ function ndigits0z(x::Uint128)
 end
 ndigits0z(x::Integer) = ndigits0z(unsigned(abs(x)))
 
-if WORD_SIZE == 32
+if WORD_SIZE == 32 && false
 const _jl_ndigits_max_mul = 69000000
 else
 const _jl_ndigits_max_mul = 290000000000000000

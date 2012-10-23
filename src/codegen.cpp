@@ -76,6 +76,8 @@ static Type *T_uint64;
 static Type *T_char;
 static Type *T_size;
 static Type *T_psize;
+static Type *T_long;
+static Type *T_plong;
 static Type *T_float32;
 static Type *T_pfloat32;
 static Type *T_float64;
@@ -883,10 +885,10 @@ static Value *emit_known_call(jl_value_t *ff, jl_value_t **args, size_t nargs,
         if (jl_is_tuple(tty) && ity==(jl_value_t*)jl_long_type) {
             if (ctx->vaStack && symbol_eq(args[1], ctx->vaName)) {
                 Value *valen = emit_n_varargs(ctx);
-                Value *idx = emit_unbox(T_size, T_psize,
+                Value *idx = emit_unbox(T_long, T_plong,
                                         emit_unboxed(args[2], ctx));
                 idx = emit_bounds_check(idx, valen, ctx);
-                idx = builder.CreateAdd(idx, ConstantInt::get(T_size, ctx->nReqArgs));
+                idx = builder.CreateAdd(idx, ConstantInt::get(T_long, ctx->nReqArgs));
                 JL_GC_POP();
                 return builder.
                     CreateLoad(builder.CreateGEP((Value*)ctx->argArray,idx),false);
@@ -909,12 +911,12 @@ static Value *emit_known_call(jl_value_t *ff, jl_value_t **args, size_t nargs,
                 }
             }
             Value *tlen = emit_tuplelen(arg1);
-            Value *idx = emit_unbox(T_size, T_psize,
+            Value *idx = emit_unbox(T_long, T_plong,
                                     emit_unboxed(args[2], ctx));
             emit_bounds_check(idx, tlen, ctx);
             JL_GC_POP();
             return emit_nthptr(arg1,
-                               builder.CreateAdd(idx, ConstantInt::get(T_size,1)));
+                               builder.CreateAdd(idx, ConstantInt::get(T_long,1)));
         }
     }
     else if (f->fptr == &jl_f_tuple) {
@@ -998,23 +1000,23 @@ static Value *emit_known_call(jl_value_t *ff, jl_value_t **args, size_t nargs,
                     }
                     else if (idx > ndims) {
                         JL_GC_POP();
-                        return ConstantInt::get(T_size, 1);
+                        return ConstantInt::get(T_long, 1);
                     }
                 }
                 else {
-                    Value *idx = emit_unbox(T_size, T_psize,
+                    Value *idx = emit_unbox(T_long, T_plong,
                                             emit_unboxed(args[2], ctx));
                     error_unless(builder.CreateICmpSGT(idx,
-                                                      ConstantInt::get(T_size,0)),
+                                                      ConstantInt::get(T_long,0)),
                                  "arraysize: dimension out of range", ctx);
                     BasicBlock *outBB = BasicBlock::Create(getGlobalContext(),"outofrange",ctx->f);
                     BasicBlock *inBB = BasicBlock::Create(getGlobalContext(),"inrange");
                     BasicBlock *ansBB = BasicBlock::Create(getGlobalContext(),"arraysize");
                     builder.CreateCondBr(builder.CreateICmpSLE(idx,
-                                                              ConstantInt::get(T_size, ndims)),
+                                                              ConstantInt::get(T_long, ndims)),
                                          inBB, outBB);
                     builder.SetInsertPoint(outBB);
-                    Value *v_one = ConstantInt::get(T_size, 1);
+                    Value *v_one = ConstantInt::get(T_long, 1);
                     builder.CreateBr(ansBB);
                     ctx->f->getBasicBlockList().push_back(inBB);
                     builder.SetInsertPoint(inBB);
@@ -1022,7 +1024,7 @@ static Value *emit_known_call(jl_value_t *ff, jl_value_t **args, size_t nargs,
                     builder.CreateBr(ansBB);
                     ctx->f->getBasicBlockList().push_back(ansBB);
                     builder.SetInsertPoint(ansBB);
-                    PHINode *result = builder.CreatePHI(T_size, 2);
+                    PHINode *result = builder.CreatePHI(T_long, 2);
                     result->addIncoming(v_one, outBB);
                     result->addIncoming(v_sz, inBB);
                     JL_GC_POP();
@@ -2123,6 +2125,12 @@ static void init_julia_llvm_env(Module *m)
     T_size = T_uint32;
 #endif
     T_psize = PointerType::get(T_size, 0);
+#if 1
+    T_long = T_int64;
+#else
+    T_long = T_int32;
+#endif
+    T_plong = PointerType::get(T_long, 0);
     T_float32 = Type::getFloatTy(getGlobalContext());
     T_pfloat32 = PointerType::get(T_float32, 0);
     T_float64 = Type::getDoubleTy(getGlobalContext());

@@ -314,7 +314,7 @@ function deserialize(s, ::Type{LambdaStaticData})
         return _jl_known_lambda_data[lnumber]
     else
         linfo = ccall(:jl_new_lambda_info, Any, (Any, Any), ast, sparams)
-        linfo.inferred = infr
+        linfo.inferred = false
         linfo.module = mod
         _jl_known_lambda_data[lnumber] = linfo
         return linfo
@@ -323,7 +323,7 @@ end
 
 function deserialize(s, ::Type{Array})
     elty = deserialize(s)
-    dims = deserialize(s)::Dims
+    dims = convert(Dims, deserialize(s))
     if isa(elty,BitsKind)
         n = prod(dims)::Int
         if elty === Bool && n>0

@@ -43,7 +43,7 @@ end
 
 function copy_to_unsafe{T}(dest::Array{T}, dsto, src::Array{T}, so, N)
     if isa(T, BitsKind)
-        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint),
+        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint32),
               pointer(dest, dsto), pointer(src, so), N*sizeof(T))
     else
         for i=0:N-1
@@ -162,7 +162,7 @@ function ref{T<:Number}(::Type{T}, r::Ranges)
 end
 
 function fill!{T<:Union(Int8,Uint8)}(a::Array{T}, x::Integer)
-    ccall(:memset, Void, (Ptr{T}, Int32, Int), a, x, length(a))
+    ccall(:memset, Void, (Ptr{T}, Int32, Int32), a, x, length(a))
     return a
 end
 function fill!{T<:Union(Integer,FloatingPoint)}(a::Array{T}, x)
@@ -688,13 +688,13 @@ function push{T}(a::Array{T,1}, item)
     end
     # convert first so we don't grow the array if the assignment won't work
     item = convert(T, item)
-    ccall(:jl_array_grow_end, Void, (Any, Uint), a, 1)
+    ccall(:jl_array_grow_end, Void, (Any, Uint32), a, 1)
     a[end] = item
     return a
 end
 
 function push(a::Array{Any,1}, item::ANY)
-    ccall(:jl_array_grow_end, Void, (Any, Uint), a, 1)
+    ccall(:jl_array_grow_end, Void, (Any, Uint32), a, 1)
     arrayset(a, item, length(a))
     return a
 end
@@ -704,19 +704,19 @@ function append!{T}(a::Array{T,1}, items::Array{T,1})
         error("[] cannot grow. Instead, initialize the array with \"T[]\".")
     end
     n = length(items)
-    ccall(:jl_array_grow_end, Void, (Any, Uint), a, n)
+    ccall(:jl_array_grow_end, Void, (Any, Uint32), a, n)
     a[end-n+1:end] = items
     return a
 end
 
 function grow(a::Vector, n::Integer)
     if n > 0
-        ccall(:jl_array_grow_end, Void, (Any, Uint), a, n)
+        ccall(:jl_array_grow_end, Void, (Any, Uint32), a, n)
     else
         if n < -length(a)
             throw(BoundsError())
         end
-        ccall(:jl_array_del_end, Void, (Any, Uint), a, -n)
+        ccall(:jl_array_del_end, Void, (Any, Uint32), a, -n)
     end
     return a
 end
@@ -726,7 +726,7 @@ function pop(a::Vector)
         error("pop: array is empty")
     end
     item = a[end]
-    ccall(:jl_array_del_end, Void, (Any, Uint), a, 1)
+    ccall(:jl_array_del_end, Void, (Any, Uint32), a, 1)
     return item
 end
 
@@ -735,7 +735,7 @@ function enqueue{T}(a::Array{T,1}, item)
         error("[] cannot grow. Instead, initialize the array with \"T[]\".")
     end
     item = convert(T, item)
-    ccall(:jl_array_grow_beg, Void, (Any, Uint), a, 1)
+    ccall(:jl_array_grow_beg, Void, (Any, Uint32), a, 1)
     a[1] = item
     return a
 end
@@ -746,7 +746,7 @@ function shift(a::Vector)
         error("shift: array is empty")
     end
     item = a[1]
-    ccall(:jl_array_del_beg, Void, (Any, Uint), a, 1)
+    ccall(:jl_array_del_beg, Void, (Any, Uint32), a, 1)
     return item
 end
 
@@ -757,14 +757,14 @@ function insert{T}(a::Array{T,1}, i::Integer, item)
     item = convert(T, item)
     n = length(a)
     if i > n
-        ccall(:jl_array_grow_end, Void, (Any, Uint), a, i-n)
+        ccall(:jl_array_grow_end, Void, (Any, Uint32), a, i-n)
     elseif i > div(n,2)
-        ccall(:jl_array_grow_end, Void, (Any, Uint), a, 1)
+        ccall(:jl_array_grow_end, Void, (Any, Uint32), a, 1)
         for k=n+1:-1:i+1
             a[k] = a[k-1]
         end
     else
-        ccall(:jl_array_grow_beg, Void, (Any, Uint), a, 1)
+        ccall(:jl_array_grow_beg, Void, (Any, Uint32), a, 1)
         for k=1:(i-1)
             a[k] = a[k+1]
         end
@@ -781,12 +781,12 @@ function del(a::Vector, i::Integer)
         for k = i:-1:2
             a[k] = a[k-1]
         end
-        ccall(:jl_array_del_beg, Void, (Any, Uint), a, 1)
+        ccall(:jl_array_del_beg, Void, (Any, Uint32), a, 1)
     else
         for k = i:n-1
             a[k] = a[k+1]
         end
-        ccall(:jl_array_del_end, Void, (Any, Uint), a, 1)
+        ccall(:jl_array_del_end, Void, (Any, Uint32), a, 1)
     end
     return a
 end
@@ -806,18 +806,18 @@ function del{T<:Integer}(a::Vector, r::Range1{T})
         for k = l:-1:1+d
             a[k] = a[k-d]
         end
-        ccall(:jl_array_del_beg, Void, (Any, Uint), a, d)
+        ccall(:jl_array_del_beg, Void, (Any, Uint32), a, d)
     else
         for k = f:n-d
             a[k] = a[k+d]
         end
-        ccall(:jl_array_del_end, Void, (Any, Uint), a, d)
+        ccall(:jl_array_del_end, Void, (Any, Uint32), a, d)
     end
     return a
 end
 
 function del_all(a::Vector)
-    ccall(:jl_array_del_end, Void, (Any, Uint), a, length(a))
+    ccall(:jl_array_del_end, Void, (Any, Uint32), a, length(a))
     return a
 end
 
@@ -1000,7 +1000,7 @@ end
 
 # use memcmp for cmp on byte arrays
 function cmp(a::Array{Uint8,1}, b::Array{Uint8,1})
-    c = ccall(:memcmp, Int32, (Ptr{Uint8}, Ptr{Uint8}, Uint),
+    c = ccall(:memcmp, Int32, (Ptr{Uint8}, Ptr{Uint8}, Uint32),
               a, b, min(length(a),length(b)))
     c < 0 ? -1 : c > 0 ? +1 : cmp(length(a),length(b))
 end
@@ -1158,7 +1158,7 @@ function vcat{T}(arrays::Array{T,1}...)
     end
     for a in arrays
         nba = length(a)*elsz
-        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint),
+        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint32),
               ptr+offset, a, nba)
         offset += nba
     end

@@ -6,9 +6,9 @@ sleep(s::Real) = ccall(:usleep, Int32, (Uint32,), uint32(iround(s*1e6)))
 strftime(t) = strftime("%c", t)
 function strftime(fmt::ByteString, t)
     tmstruct = Array(Int32, 14)
-    ccall(:localtime_r, Ptr{Void}, (Ptr{Int}, Ptr{Int32}), &t, tmstruct)
+    ccall(:localtime_r, Ptr{Void}, (Ptr{Int32}, Ptr{Int32}), &t, tmstruct)
     timestr = Array(Uint8, 128)
-    n = ccall(:strftime, Int, (Ptr{Uint8}, Int, Ptr{Uint8}, Ptr{Int32}),
+    n = ccall(:strftime, Int32, (Ptr{Uint8}, Int32, Ptr{Uint8}, Ptr{Int32}),
               timestr, length(timestr), fmt, tmstruct)
     if n == 0
         return ""
@@ -24,7 +24,7 @@ function strptime(fmt::ByteString, timestr::ByteString)
     if r == C_NULL
         error("strptime: invalid arguments")
     end
-    float64(ccall(:mktime, Int, (Ptr{Int32},), tmstruct))
+    float64(ccall(:mktime, Int32, (Ptr{Int32},), tmstruct))
 end
 
 ## process-related functions ##
@@ -36,13 +36,13 @@ system(cmd::String) = int(ccall(:system, Int32, (Ptr{Uint8},), cmd))
 
 function gethostname()
     hn = Array(Uint8, 128)
-    ccall(:gethostname, Int32, (Ptr{Uint8}, Uint), hn, length(hn))
+    ccall(:gethostname, Int32, (Ptr{Uint8}, Uint32), hn, length(hn))
     bytestring(convert(Ptr{Uint8},hn))
 end
 
 function getipaddr()
     ip = Array(Uint8, 128)
-    ccall(:getlocalip, Void, (Ptr{Uint8}, Uint), ip, length(ip))
+    ccall(:getlocalip, Void, (Ptr{Uint8}, Uint32), ip, length(ip))
     bytestring(convert(Ptr{Uint8},ip))
 end
 

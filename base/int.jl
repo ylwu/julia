@@ -506,7 +506,7 @@ promote_rule(::Type{Uint16}, ::Type{Int32} ) = Int
 promote_rule(::Type{Uint16}, ::Type{Int64} ) = Int64
 promote_rule(::Type{Uint16}, ::Type{Int128}) = Int128
 
-if WORD_SIZE == 64
+if WORD_SIZE == 64 || true
     promote_rule(::Type{Uint32}, ::Type{Int8} ) = Int
     promote_rule(::Type{Uint32}, ::Type{Int16}) = Int
     promote_rule(::Type{Uint32}, ::Type{Int32}) = Int
