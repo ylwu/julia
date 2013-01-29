@@ -272,9 +272,6 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
     else if (jl_is_struct_type(jt)) {
         if (addressOf)
             jl_error("ccall: unexpected addressOf operator"); // the only "safe" thing to emit here is the expected struct
-        assert (ty->isPointerTy());
-        Type *ety = ty->getContainedType(0);
-        assert (ety->isStructTy() && (Type*)((jl_struct_type_t*)jt)->struct_decl == ety);
         jl_value_t *aty = expr_type(argex, ctx);
         if (aty != jt) {
             std::stringstream msg;
@@ -286,10 +283,19 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
         //if (!jl_is_struct_type(aty))
         //    emit_typecheck(emit_typeof(jv), (jl_value_t*)jl_struct_kind, "ccall: Struct argument called with something that isn't a CompositeKind", ctx);
         // //safe thing would be to also check that jl_typeof(aty)->size > sizeof(ty) here and/or at runtime
+        int byval = ty->isPointerTy();
+        Type *ety = ty;
+        if (byval)
+            ety = ty->getContainedType(0);
+        else
+            ty = PointerType::get(ety,0);
+        assert (ety->isStructTy() && (Type*)((jl_struct_type_t*)jt)->struct_decl == ety);
         Value *pjv = builder.CreateBitCast(emit_nthptr_addr(jv, (size_t)1), ty);
+        if (!byval)
+            return builder.CreateLoad(pjv, false);
         Value *copy = builder.CreateAlloca(ety);
         builder.CreateStore(builder.CreateLoad(pjv), copy);
-        return copy; //builder.CreateLoad(pjv, false);
+        return copy;
     }
     // TODO: error for & with non-pointer argument type
     assert(jl_is_bits_type(jt));
@@ -397,15 +403,18 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
     std::vector<Type *> fargt_sig(0);
     std::vector<AttributeWithIndex> attrs;
     int sret = 0;
-    if (0 && lrt->isStructTy()) {
+    if (lrt->isStructTy()) {
+        assert(jl_is_struct_type(rt));
+        if (((jl_struct_type_t*)rt)->size > 2*sizeof(void*)) {
 #ifdef LLVM32
-        attrs.push_back(AttributeWithIndex::get(getGlobalContext(), 1, Attributes::StructRet));
+            attrs.push_back(AttributeWithIndex::get(getGlobalContext(), 1, Attributes::StructRet));
 #else
-        attrs.push_back(AttributeWithIndex::get(1, Attribute::StructRet));
+            attrs.push_back(AttributeWithIndex::get(1, Attribute::StructRet));
 #endif
-        fargt_sig.push_back(PointerType::get(lrt,0));
-        lrt = T_void;
-        sret = 1;
+            fargt_sig.push_back(PointerType::get(lrt,0));
+            lrt = T_void;
+            sret = 1;
+        }
     }
     size_t i;
     bool haspointers = false;
@@ -454,12 +463,15 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
             return literal_pointer_val(jl_nothing);
         }
         if (t->isStructTy()) {
-            t = PointerType::get(t,0);
+            assert(jl_is_struct_type(tti));
+            if (((jl_struct_type_t*)tti)->size > 2*sizeof(void*)) {
+                t = PointerType::get(t,0);
 #ifdef LLVM32
-            attrs.push_back(AttributeWithIndex::get(getGlobalContext(), i+1+sret, Attributes::ByVal));
+                attrs.push_back(AttributeWithIndex::get(getGlobalContext(), i+1+sret, Attributes::ByVal));
 #else
-            attrs.push_back(AttributeWithIndex::get(i+1, Attribute::ByVal));
+                attrs.push_back(AttributeWithIndex::get(i+1, Attribute::ByVal));
 #endif
+            }
         }
         fargt.push_back(t);
         if (!isVa)
