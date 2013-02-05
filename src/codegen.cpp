@@ -66,12 +66,13 @@ static DIBuilder *dbuilder;
 static std::map<int, std::string> argNumberStrings;
 static FunctionPassManager *FPM;
 
-//clang state
+// clang state
 #undef B0
 #undef DEBUG
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CodeGenOptions.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/Basic/Specifiers.h>
 #include <CodeGen/CodeGenModule.h>
 #include <CodeGen/CodeGenTypes.h>
 #include <CodeGen/CodeGenFunction.h>
@@ -80,9 +81,30 @@ static clang::CompilerInstance *clang_compiler;
 static clang::CodeGen::CodeGenModule *clang_cgm;
 static clang::CodeGen::CodeGenTypes *clang_cgt;
 static clang::CodeGen::CodeGenFunction *clang_cgf;
+// clang types
+static clang::CanQualType cT_int1;
+static clang::CanQualType cT_int8;
+static clang::CanQualType cT_uint8;
+static clang::CanQualType cT_int16;
+static clang::CanQualType cT_uint16;
+static clang::CanQualType cT_int32;
+static clang::CanQualType cT_uint32;
+static clang::CanQualType cT_int64;
+static clang::CanQualType cT_uint64;
+static clang::CanQualType cT_char;
+static clang::CanQualType cT_size;
+static clang::CanQualType cT_int128;
+static clang::CanQualType cT_uint128;
+static clang::CanQualType cT_complex64;
+static clang::CanQualType cT_complex128;
+static clang::CanQualType cT_float32;
+static clang::CanQualType cT_float64;
+static clang::CanQualType cT_void;
+static clang::CanQualType cT_pvoid;
+
 #undef DEBUG
 
-// types
+// llvm types
 static Type *jl_value_llvmt;
 static Type *jl_pvalue_llvmt;
 static Type *jl_ppvalue_llvmt;
@@ -2770,6 +2792,34 @@ void init_julia_clang_env(StringRef TT) {
             clang_compiler->getDiagnostics());
     clang_cgt = new clang::CodeGen::CodeGenTypes(*clang_cgm);
     clang_cgf = new clang::CodeGen::CodeGenFunction(*clang_cgm);
+
+    
+    cT_int1  = clang_astcontext->BoolTy;
+    cT_int8  = clang_astcontext->SignedCharTy;
+    cT_uint8 = clang_astcontext->UnsignedCharTy;
+    cT_int16 = clang_astcontext->ShortTy;
+    cT_uint16 = clang_astcontext->UnsignedShortTy;
+    cT_int32 = clang_astcontext->IntTy;
+    cT_uint32 = clang_astcontext->UnsignedIntTy;
+    cT_char = clang_astcontext->IntTy;
+#ifdef __LP64__
+    cT_int64 = clang_astcontext->LongTy;
+    cT_uint64 = clang_astcontext->UnsignedLongTy;
+#else
+    cT_int64 = clang_astcontext->LongLongTy;
+    cT_uint64 = clang_astcontext->UnsignedLongLongTy;
+#endif
+    cT_size = clang_astcontext->getSizeType();
+    cT_int128 = clang_astcontext->Int128Ty;
+    cT_uint128 = clang_astcontext->UnsignedInt128Ty;
+    cT_complex64 = clang_astcontext->FloatComplexTy;
+    cT_complex128 = clang_astcontext->DoubleComplexTy;
+
+    cT_float32 = clang_astcontext->FloatTy;
+    cT_float64 = clang_astcontext->DoubleTy;
+    cT_void = clang_astcontext->VoidTy;
+
+    cT_pvoid = clang_astcontext->getPointerType(cT_void);
 }
 
 extern "C" void jl_init_codegen(void)
