@@ -3,7 +3,7 @@ include Versions.make
 ## optional packages and options #
 LLVM_ASSERTIONS = 0
 # set to 1 to get clang and compiler-rt
-BUILD_LLVM_CLANG = 0
+BUILD_LLVM_CLANG = 1
 # set to 1 to get lldb (does not work with llvm3.1 and earlier)
 # see http://lldb.llvm.org/build.html for dependancies
 BUILD_LLDB = 0

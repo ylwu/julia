@@ -66,6 +66,22 @@ static DIBuilder *dbuilder;
 static std::map<int, std::string> argNumberStrings;
 static FunctionPassManager *FPM;
 
+//clang state
+#undef B0
+#undef DEBUG
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/CodeGenOptions.h>
+#include <clang/AST/ASTContext.h>
+#include <CodeGen/CodeGenModule.h>
+#include <CodeGen/CodeGenTypes.h>
+#include <CodeGen/CodeGenFunction.h>
+static clang::ASTContext *clang_astcontext;
+static clang::CompilerInstance *clang_compiler;
+static clang::CodeGen::CodeGenModule *clang_cgm;
+static clang::CodeGen::CodeGenTypes *clang_cgt;
+static clang::CodeGen::CodeGenFunction *clang_cgf;
+#undef DEBUG
+
 // types
 static Type *jl_value_llvmt;
 static Type *jl_pvalue_llvmt;
@@ -2732,6 +2748,30 @@ static void init_julia_llvm_env(Module *m)
     FPM->doInitialization();
 }
 
+void init_julia_clang_env(StringRef TT) {
+    //copied from http://www.ibm.com/developerworks/library/os-createcompilerllvm2/index.html
+    clang_compiler = new clang::CompilerInstance;
+    clang_compiler->createDiagnostics(0,NULL);
+    clang::TargetOptions to;
+    to.Triple = TT;
+    clang::TargetInfo *tin = clang::TargetInfo::CreateTargetInfo(clang_compiler->getDiagnostics(), to);
+    clang_compiler->setTarget(tin);
+    clang_compiler->createFileManager();
+    clang_compiler->createSourceManager(clang_compiler->getFileManager());
+    clang_compiler->createPreprocessor();
+    clang_compiler->createASTContext();
+    clang_astcontext = &clang_compiler->getASTContext();
+    DataLayout TD = DataLayout(tin->getTargetDescription());
+    clang_cgm = new clang::CodeGen::CodeGenModule(
+            *clang_astcontext,
+            clang_compiler->getCodeGenOpts(),
+            *jl_Module,
+            TD,
+            clang_compiler->getDiagnostics());
+    clang_cgt = new clang::CodeGen::CodeGenTypes(*clang_cgm);
+    clang_cgf = new clang::CodeGen::CodeGenFunction(*clang_cgm);
+}
+
 extern "C" void jl_init_codegen(void)
 {
     
@@ -2763,7 +2803,9 @@ extern "C" void jl_init_codegen(void)
 #ifdef __APPLE__
     options.JITExceptionHandling = 1;
 #endif
-    jl_ExecutionEngine = EngineBuilder(jl_Module)
+    EngineBuilder eb(jl_Module);
+    StringRef TT = eb.selectTarget()->getTargetTriple();
+    jl_ExecutionEngine = eb
         .setEngineKind(EngineKind::JIT)
         .setTargetOptions(options)
         .create();
@@ -2821,6 +2863,8 @@ extern "C" void jl_init_codegen(void)
                          jl_Module);
     jl_ExecutionEngine->addGlobalMapping(restore_arg_area_loc_func,
                                          (void*)&restore_arg_area_loc);
+
+    init_julia_clang_env(TT);
 }
 
 /*
