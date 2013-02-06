@@ -512,12 +512,12 @@ function circshift(a, shiftamts)
     a[I...]::typeof(a)
 end
 
-## Indexing: assign ##
+## Indexing: assign! ##
 
 # 1-d indexing is assumed defined on subtypes
-assign(t::AbstractArray, x, i::Real) =
+assign!(t::AbstractArray, x, i::Real) =
     error("assign not defined for ",typeof(t))
-assign(t::AbstractArray, x) = throw(MethodError(assign, (t, x)))
+assign!(t::AbstractArray, x) = throw(MethodError(assign!, (t, x)))
 
 ## Concatenation ##
 

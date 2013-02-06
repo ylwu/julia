@@ -619,7 +619,7 @@ export
     allp,
     any,
     anyp,
-    assign,
+    assign!,
     collect,
     complement,
     complement!,

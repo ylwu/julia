@@ -228,7 +228,7 @@ copy(d::SubOrDArray) = d
 # local copies are obtained by convert(Array, ) or assigning from
 # a SubDArray to a local Array.
 
-function assign(a::Array, d::DArray, I::Range1{Int}...)
+function assign!(a::Array, d::DArray, I::Range1{Int}...)
     n = length(I)
     @sync begin
         for i = 1:length(d.chunks)
@@ -239,7 +239,7 @@ function assign(a::Array, d::DArray, I::Range1{Int}...)
     a
 end
 
-function assign(a::Array, s::SubDArray, I::Range1{Int}...)
+function assign!(a::Array, s::SubDArray, I::Range1{Int}...)
     n = length(I)
     d = s.parent
     J = s.indexes
@@ -269,7 +269,7 @@ function assign(a::Array, s::SubDArray, I::Range1{Int}...)
 end
 
 # to disambiguate
-assign(a::Array{Any}, d::SubOrDArray, i::Int) = arrayset(a, d, i)
+assign!(a::Array{Any}, d::SubOrDArray, i::Int) = arrayset(a, d, i)
 
-assign(a::Array, d::SubOrDArray, I::Union(Int,Range1{Int})...) =
-    assign(a, d, [isa(i,Int) ? (i:i) : i for i in I ]...)
+assign!(a::Array, d::SubOrDArray, I::Union(Int,Range1{Int})...) =
+    assign!(a, d, [isa(i,Int) ? (i:i) : i for i in I ]...)

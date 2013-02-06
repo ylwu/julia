@@ -1,4 +1,4 @@
-import Base.ref, Base.assign, Base.sub, Base.size, Base.copy
+import Base.ref, Base.assign!, Base.sub, Base.size, Base.copy
 
 ## Color spaces
 abstract ColorSpace
@@ -21,7 +21,7 @@ CSNamed(t...) = CSNamed([t...])  # allow tuple
 function ref(n::CSNamed,ind::Int)
     return n.str[ind]
 end
-function assign(n::CSNamed,value,key)
+function assign!(n::CSNamed,value,key)
     n.str[key] = value
 end
 
@@ -336,9 +336,9 @@ function sub(img::ImageArray,ind...)
         return imgret
     end
 end
-function assign(img::ImageArray,val,ind...)
+function assign!(img::ImageArray,val,ind...)
     if isa(ind[1],Char)
-        ## Named assign syntax: assign(img,'a',20:50,'b',40:200,...)
+        ## Named assign syntax: assign!(img,'a',20:50,'b',40:200,...)
         sniprange = _image_named_coords_sub(img,ind)
         # Do the snip
         img.data[sniprange...] = val

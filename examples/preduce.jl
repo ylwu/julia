@@ -41,4 +41,4 @@ type RefGroup
 end
 
 ref(r::RefGroup, i) = fetch(r.refs[i])
-assign(r::RefGroup, v, i) = put(r.refs[i], v)
+assign!(r::RefGroup, v, i) = put(r.refs[i], v)

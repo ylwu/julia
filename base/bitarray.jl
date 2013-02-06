@@ -400,9 +400,9 @@ ref(B::BitMatrix, I::Range1{Int}, J::AbstractVector{Bool}) = B[I, find(J)]
 ref{T<:Real}(B::BitMatrix, I::AbstractVector{T}, J::AbstractVector{Bool}) = B[I, find(J)]
 ref{T<:Real}(B::BitMatrix, I::AbstractVector{Bool}, J::AbstractVector{T}) = B[find(I), J]
 
-## Indexing: assign ##
+## Indexing: assign! ##
 
-function assign(B::BitArray, x, i::Real)
+function assign!(B::BitArray, x, i::Real)
     i = to_index(i)
     if i < 1 || i > length(B)
         throw(BoundsError())
@@ -418,16 +418,16 @@ function assign(B::BitArray, x, i::Real)
     return B
 end
 
-assign(B::BitArray, x, i0::Real, i1::Real) =
+assign!(B::BitArray, x, i0::Real, i1::Real) =
     B[to_index(i0) + size(B,1)*(to_index(i1)-1)] = x
 
-assign(B::BitArray, x, i0::Real, i1::Real, i2::Real) =
+assign!(B::BitArray, x, i0::Real, i1::Real, i2::Real) =
     B[to_index(i0) + size(B,1)*((to_index(i1)-1) + size(B,2)*(to_index(i2)-1))] = x
 
-assign(B::BitArray, x, i0::Real, i1::Real, i2::Real, i3::Real) =
+assign!(B::BitArray, x, i0::Real, i1::Real, i2::Real, i3::Real) =
     B[to_index(i0) + size(B,1)*((to_index(i1)-1) + size(B,2)*((to_index(i2)-1) + size(B,3)*(to_index(i3)-1)))] = x
 
-function assign(B::BitArray, x, I0::Real, I::Real...)
+function assign!(B::BitArray, x, I0::Real, I::Real...)
     index = to_index(I0)
     stride = 1
     for k = 1:length(I)
@@ -507,12 +507,12 @@ end
 # note: we can gain some performance if the first dimension is a range;
 #       currently this is mainly indended for the general cat case
 # TODO: extend to I:Indices... (i.e. not necessarily contiguous)
-function assign(B::BitArray, X::BitArray, I0::Range1{Int}, I::Union(Integer, Range1{Int})...)
+function assign!(B::BitArray, X::BitArray, I0::Range1{Int}, I::Union(Integer, Range1{Int})...)
     I = map(x->(isa(x,Integer) ? (x:x) : x), I)
     assign_array2bitarray_ranges(B, X, I0, I...)
 end
 
-function assign{T<:Real}(B::BitArray, X::AbstractArray, I::AbstractVector{T})
+function assign!{T<:Real}(B::BitArray, X::AbstractArray, I::AbstractVector{T})
     if length(X) != length(I); error("argument dimensions must match"); end
     count = 1
     for i in I
@@ -522,30 +522,30 @@ function assign{T<:Real}(B::BitArray, X::AbstractArray, I::AbstractVector{T})
     return B
 end
 
-function assign(B::BitArray, X::AbstractArray, i0::Real)
+function assign!(B::BitArray, X::AbstractArray, i0::Real)
     if length(X) != 1
         error("argument dimensions must match")
     end
-    return assign(B, X[1], i0)
+    return assign!(B, X[1], i0)
 end
 
-function assign(B::BitArray, X::AbstractArray, i0::Real, i1::Real)
+function assign!(B::BitArray, X::AbstractArray, i0::Real, i1::Real)
     if length(X) != 1
         error("argument dimensions must match")
     end
-    return assign(B, X[1], i0, i1)
+    return assign!(B, X[1], i0, i1)
 end
 
-function assign(B::BitArray, X::AbstractArray, I0::Real, I::Real...)
+function assign!(B::BitArray, X::AbstractArray, I0::Real, I::Real...)
     if length(X) != 1
         error("argument dimensions must match")
     end
-    return assign(B, X[1], i0, I...)
+    return assign!(B, X[1], i0, I...)
 end
 
 let assign_cache = nothing
-    global assign
-    function assign(B::BitArray, X::AbstractArray, I::Union(Real,AbstractArray)...)
+    global assign!
+    function assign!(B::BitArray, X::AbstractArray, I::Union(Real,AbstractArray)...)
         I = indices(I)
         nel = 1
         for idx in I
@@ -573,7 +573,7 @@ let assign_cache = nothing
     end
 end
 
-function assign{T<:Real}(B::BitArray, x, I::AbstractVector{T})
+function assign!{T<:Real}(B::BitArray, x, I::AbstractVector{T})
     for i in I
         B[i] = x
     end
@@ -581,8 +581,8 @@ function assign{T<:Real}(B::BitArray, x, I::AbstractVector{T})
 end
 
 let assign_cache = nothing
-    global assign
-    function assign(B::BitArray, x, I::Union(Real,AbstractArray)...)
+    global assign!
+    function assign!(B::BitArray, x, I::Union(Real,AbstractArray)...)
         I = indices(I)
         if is(assign_cache,nothing)
             assign_cache = Dict()
@@ -619,39 +619,39 @@ function assign_bool_vector_1d(A::BitArray, X::AbstractArray, I::AbstractArray{B
     A
 end
 
-assign(A::BitArray, X::AbstractArray, I::AbstractVector{Bool}) = assign_bool_vector_1d(A, X, I)
-assign(A::BitArray, X::AbstractArray, I::AbstractArray{Bool}) = assign_bool_vector_1d(A, X, I)
-assign(A::BitArray, x, I::AbstractVector{Bool}) = assign_bool_scalar_1d(A, x, I)
-assign(A::BitArray, x, I::AbstractArray{Bool}) = assign_bool_scalar_1d(A, x, I)
+assign!(A::BitArray, X::AbstractArray, I::AbstractVector{Bool}) = assign_bool_vector_1d(A, X, I)
+assign!(A::BitArray, X::AbstractArray, I::AbstractArray{Bool}) = assign_bool_vector_1d(A, X, I)
+assign!(A::BitArray, x, I::AbstractVector{Bool}) = assign_bool_scalar_1d(A, x, I)
+assign!(A::BitArray, x, I::AbstractArray{Bool}) = assign_bool_scalar_1d(A, x, I)
 
-assign(A::BitMatrix, x::AbstractArray, I::Real, J::AbstractVector{Bool}) =
+assign!(A::BitMatrix, x::AbstractArray, I::Real, J::AbstractVector{Bool}) =
     (A[I,find(J)] = x)
 
-assign(A::BitMatrix, x, I::Real, J::AbstractVector{Bool}) =
+assign!(A::BitMatrix, x, I::Real, J::AbstractVector{Bool}) =
     (A[I,find(J)] = x)
 
-assign(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::Real) =
+assign!(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::Real) =
     (A[find(I),J] = x)
 
-assign(A::BitMatrix, x, I::AbstractVector{Bool}, J::Real) =
+assign!(A::BitMatrix, x, I::AbstractVector{Bool}, J::Real) =
     (A[find(I),J] = x)
 
-assign(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::AbstractVector{Bool}) =
+assign!(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::AbstractVector{Bool}) =
     (A[find(I),find(J)] = x)
 
-assign(A::BitMatrix, x, I::AbstractVector{Bool}, J::AbstractVector{Bool}) =
+assign!(A::BitMatrix, x, I::AbstractVector{Bool}, J::AbstractVector{Bool}) =
     (A[find(I),find(J)] = x)
 
-assign{T<:Integer}(A::BitMatrix, x::AbstractArray, I::AbstractVector{T}, J::AbstractVector{Bool}) =
+assign!{T<:Integer}(A::BitMatrix, x::AbstractArray, I::AbstractVector{T}, J::AbstractVector{Bool}) =
     (A[I,find(J)] = x)
 
-assign{T<:Real}(A::BitMatrix, x, I::AbstractVector{T}, J::AbstractVector{Bool}) =
+assign!{T<:Real}(A::BitMatrix, x, I::AbstractVector{T}, J::AbstractVector{Bool}) =
     (A[I,find(J)] = x)
 
-assign{T<:Real}(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::AbstractVector{T}) =
+assign!{T<:Real}(A::BitMatrix, x::AbstractArray, I::AbstractVector{Bool}, J::AbstractVector{T}) =
     (A[find(I),J] = x)
 
-assign{T<:Real}(A::BitMatrix, x, I::AbstractVector{Bool}, J::AbstractVector{T}) =
+assign!{T<:Real}(A::BitMatrix, x, I::AbstractVector{Bool}, J::AbstractVector{T}) =
     (A[find(I),J] = x)
 
 ## Dequeue functionality ##

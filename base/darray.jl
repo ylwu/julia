@@ -424,11 +424,11 @@ function ref(r::RemoteRef, args...)
     end
 end
 
-function assign(r::RemoteRef, args...)
+function assign!(r::RemoteRef, args...)
     if r.where==myid()
-        assign(fetch(r), args...)
+        assign!(fetch(r), args...)
     else
-        sync_add(remote_call(r.where, assign, r, args...))
+        sync_add(remote_call(r.where, assign!, r, args...))
     end
 end
 
@@ -443,13 +443,13 @@ function ref{T}(d::DArray{T,1}, i::Int)
 end
 
 # 1d scalar assign
-function assign{T}(d::DArray{T,1}, v, i::Int)
+function assign!{T}(d::DArray{T,1}, v, i::Int)
     p = locate(d, i)
     if p==d.localpiece
         offs = d.dist[p]-1
         localize(d)[i-offs] = v
     else
-        sync_add(remote_call(d.pmap[p], assign, d, v, i))
+        sync_add(remote_call(d.pmap[p], assign!, d, v, i))
     end
     d
 end
@@ -579,14 +579,14 @@ function assign_elt(d::DArray, v, sub::(Int...))
     d
 end
 
-assign(d::DArray, v, i::Int) = assign_elt(d, v, ind2sub(d.dims, i))
-assign(d::DArray, v, i0::Int, I::Int...) = assign_elt(d, v, tuple(i0,I...))
+assign!(d::DArray, v, i::Int) = assign_elt(d, v, ind2sub(d.dims, i))
+assign!(d::DArray, v, i0::Int, I::Int...) = assign_elt(d, v, tuple(i0,I...))
 
 #TODO: Fix this
-assign(d::DArray, v) = error("distributed arrays of dimension 0 not supported")
+assign!(d::DArray, v) = error("distributed arrays of dimension 0 not supported")
 
 # Nd assign, scalar fill case, with Range1 indexes
-function assign(d::DArray, v, I::Range1{Int}...)
+function assign!(d::DArray, v, I::Range1{Int}...)
     (pmap, dist) = locate(d, I[d.distdim])
     if length(pmap) == 1 && pmap[1] == d.localpiece
         offs = d.dist[pmap[1]]-1
@@ -596,13 +596,13 @@ function assign(d::DArray, v, I::Range1{Int}...)
     end
     for p = 1:length(pmap)
         K = [ i==d.distdim ? (dist[p]:(dist[p+1]-1)) : I[i] for i=1:ndims(d) ]
-        sync_add(remote_call(d.pmap[pmap[p]], assign, d, v, K...))
+        sync_add(remote_call(d.pmap[pmap[p]], assign!, d, v, K...))
     end
     return d
 end
 
 # Nd assign, array copy case, with Range1 indexes
-function assign(d::DArray, v::AbstractArray, I::Range1{Int}...)
+function assign!(d::DArray, v::AbstractArray, I::Range1{Int}...)
     assign_shape_check(v, I...)
     (pmap, dist) = locate(d, I[d.distdim])
     if length(pmap) == 1 && pmap[1] == d.localpiece
@@ -620,13 +620,13 @@ function assign(d::DArray, v::AbstractArray, I::Range1{Int}...)
                                                (1:length(I[i]))))
         K = ntuple(ndims(d),i->(i==d.distdim ? (dist[p]:(dist[p+1]-1)) :
                                                I[i]))
-        sync_add(remote_call(d.pmap[pmap[p]], assign, d, sub(v,J), K...))
+        sync_add(remote_call(d.pmap[pmap[p]], assign!, d, sub(v,J), K...))
     end
     return d
 end
 
 # Nd assign, scalar fill case, vector indexes
-function assign(d::DArray, v, I::AbstractVector{Int}...)
+function assign!(d::DArray, v, I::AbstractVector{Int}...)
     (pmap, dist, perm) = locate(d, I[d.distdim])
     if length(pmap) == 1 && pmap[1] == d.localpiece
         offs = d.dist[pmap[1]]-1
@@ -644,13 +644,13 @@ function assign(d::DArray, v, I::AbstractVector{Int}...)
             j += 1
         end
         K = [ i==d.distdim ? II[lower:(j-1)] : I[i] for i=1:ndims(d) ]
-        sync_add(remote_call(d.pmap[pmap[p]], assign, d, v, K...))
+        sync_add(remote_call(d.pmap[pmap[p]], assign!, d, v, K...))
     end
     return d
 end
 
 # Nd assign, array copy case, vector indexes
-function assign(d::DArray, v::AbstractArray, I::AbstractVector{Int}...)
+function assign!(d::DArray, v::AbstractArray, I::AbstractVector{Int}...)
     assign_shape_check(v, I...)
     (pmap, dist, perm) = locate(d, I[d.distdim])
     if length(pmap) == 1 && pmap[1] == d.localpiece
@@ -675,18 +675,18 @@ function assign(d::DArray, v::AbstractArray, I::AbstractVector{Int}...)
                                                (1:length(I[i]))))
         K = ntuple(ndims(d),i->(i==d.distdim ? II[lower:(j-1)] :
                                                I[i]))
-        sync_add(remote_call(d.pmap[pmap[p]], assign, d, sub(v,J), K...))
+        sync_add(remote_call(d.pmap[pmap[p]], assign!, d, sub(v,J), K...))
     end
     return d
 end
 
 # assign with combinations of Range1 and scalar indexes
-assign(d::DArray, v, I::Union(Int,Range1{Int})...) =
-    assign(d, v, [isa(i,Int) ? (i:i) : i for i in I]...)
+assign!(d::DArray, v, I::Union(Int,Range1{Int})...) =
+    assign!(d, v, [isa(i,Int) ? (i:i) : i for i in I]...)
 
 # assign with combinations of vector and scalar indexes
-assign(d::DArray, v, I::Union(Int,AbstractVector{Int})...) =
-    assign(d, v, [isa(i,Int) ? [i] : i for i in I]...)
+assign!(d::DArray, v, I::Union(Int,AbstractVector{Int})...) =
+    assign!(d, v, [isa(i,Int) ? [i] : i for i in I]...)
 
 ## matrix multiply ##
 

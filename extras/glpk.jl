@@ -167,7 +167,7 @@ export
     minisat1,
     intfeas1
 
-import Base.pointer, Base.assign, Base.ref
+import Base.pointer, Base.assign!, Base.ref
 
 ## Shared library interface setup
 #{{{
@@ -238,7 +238,7 @@ type ParamDescriptor
     end
 end
 
-function assign{T}(param::Param, val::T, field_name::String)
+function assign!{T}(param::Param, val::T, field_name::String)
     if pointer(param) == C_NULL
         error("param is not allocated")
     end

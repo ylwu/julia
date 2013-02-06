@@ -112,7 +112,7 @@ end
 
 similar(d::ObjectIdDict) = ObjectIdDict()
 
-function assign(t::ObjectIdDict, v::ANY, k::ANY)
+function assign!(t::ObjectIdDict, v::ANY, k::ANY)
     t.ht = ccall(:jl_eqtable_put, Array{Any,1}, (Any, Any, Any), t.ht, k, v)
     return t
 end
@@ -333,7 +333,7 @@ function empty!{K,V}(h::Dict{K,V})
     return h
 end
 
-function assign{K,V}(h::Dict{K,V}, v, key)
+function assign!{K,V}(h::Dict{K,V}, v, key)
     key = convert(K,key)
     v   = convert(V,  v)
 
@@ -391,7 +391,7 @@ function assign{K,V}(h::Dict{K,V}, v, key)
 
     rehash(h, h.count > 64000 ? sz*2 : sz*4)
 
-    assign(h, v, key)
+    assign!(h, v, key)
 end
 
 # get the index where a key is stored, or -1 if not present
@@ -514,7 +514,7 @@ type WeakKeyDict{K,V} <: Associative{K,V}
 end
 WeakKeyDict() = WeakKeyDict{Any,Any}()
 
-assign{K}(wkh::WeakKeyDict{K}, v, key) = add_weak_key(wkh.ht, convert(K,key), v)
+assign!{K}(wkh::WeakKeyDict{K}, v, key) = add_weak_key(wkh.ht, convert(K,key), v)
 
 function key{K}(wkh::WeakKeyDict{K}, kk, deflt)
     k = key(wkh.ht, kk, secret_table_token)

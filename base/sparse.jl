@@ -1043,10 +1043,10 @@ function ref{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, I::AbstractVector, J::AbstractVec
 
 end
 
-## assign
-assign(A::SparseMatrixCSC, v, i::Integer) = assign(A, v, ind2sub(size(A),i)...)
+## assign!
+assign!(A::SparseMatrixCSC, v, i::Integer) = assign!(A, v, ind2sub(size(A),i)...)
 
-function assign{T,Ti}(A::SparseMatrixCSC{T,Ti}, v, i0::Integer, i1::Integer)
+function assign!{T,Ti}(A::SparseMatrixCSC{T,Ti}, v, i0::Integer, i1::Integer)
     i0 = convert(Ti, i0)
     i1 = convert(Ti, i1)
     if !(1 <= i0 <= A.m && 1 <= i1 <= A.n); error(BoundsError); end
@@ -1151,19 +1151,19 @@ function assign{T,Ti}(A::SparseMatrixCSC{T,Ti}, v, i0::Integer, i1::Integer)
     return A
 end
 
-assign(A::SparseMatrixCSC, v::AbstractMatrix, i::Integer, J::AbstractVector) = assign(A, v, [i], J)
-assign(A::SparseMatrixCSC, v::AbstractMatrix, I::AbstractVector, j::Integer) = assign(A, v, I, [j])
+assign!(A::SparseMatrixCSC, v::AbstractMatrix, i::Integer, J::AbstractVector) = assign!(A, v, [i], J)
+assign!(A::SparseMatrixCSC, v::AbstractMatrix, I::AbstractVector, j::Integer) = assign!(A, v, I, [j])
 
-assign{Tv}(A::SparseMatrixCSC{Tv}, x::Number, I::AbstractVector, J::AbstractVector) = 
-    assign(A, fill(x::Tv, (length(I), length(J))), I, J)
+assign!{Tv}(A::SparseMatrixCSC{Tv}, x::Number, I::AbstractVector, J::AbstractVector) = 
+    assign!(A, fill(x::Tv, (length(I), length(J))), I, J)
 
-assign{Tv}(A::SparseMatrixCSC{Tv}, S::Matrix{Tv}, I::AbstractVector, J::AbstractVector) = 
-      assign(A, sparse(S), I, J)
+assign!{Tv}(A::SparseMatrixCSC{Tv}, S::Matrix{Tv}, I::AbstractVector, J::AbstractVector) = 
+      assign!(A, sparse(S), I, J)
 
 # A[I,J] = B
-function assign{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, B::SparseMatrixCSC{Tv,Ti}, I::AbstractVector, J::AbstractVector)
+function assign!{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, B::SparseMatrixCSC{Tv,Ti}, I::AbstractVector, J::AbstractVector)
     if size(B,1) != length(I) || size(B,2) != length(J)
-        return("error in assign: mismatched dimensions")
+        return("error in assign!: mismatched dimensions")
     end
 
     issortedI = issorted(I)

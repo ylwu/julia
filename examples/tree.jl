@@ -42,16 +42,16 @@ function ref(t::TreeNode, key)
     end
 end
 
-assign{K,V}(t::EmptyTree{K,V}, v, k) = TreeNode{K,V}(k, v, t, t)
-assign(t::BTree, v, k) = (t.root = assign(t.root, v, k); t)
+assign!{K,V}(t::EmptyTree{K,V}, v, k) = TreeNode{K,V}(k, v, t, t)
+assign!(t::BTree, v, k) = (t.root = assign!(t.root, v, k); t)
 
-function assign(t::TreeNode, v, k)
+function assign!(t::TreeNode, v, k)
     if t.key == k
         t.data = v
     elseif k < t.key
-        t.left = assign(t.left, v, k)
+        t.left = assign!(t.left, v, k)
     else
-        t.right = assign(t.right, v, k)
+        t.right = assign!(t.right, v, k)
     end
     t
 end

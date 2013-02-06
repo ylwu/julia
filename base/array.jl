@@ -370,39 +370,39 @@ ref(A::Matrix, I::AbstractVector{Bool}, J::AbstractVector{Bool}) = A[find(I),fin
 ref{T<:Real}(A::Matrix, I::AbstractVector{T}, J::AbstractVector{Bool}) = A[I,find(J)]
 ref{T<:Real}(A::Matrix, I::AbstractVector{Bool}, J::AbstractVector{T}) = A[find(I),J]
 
-## Indexing: assign ##
-assign{T}(A::Array{T,0}, x) = arrayset(A, convert(T,x), 1)
+## Indexing: assign! ##
+assign!{T}(A::Array{T,0}, x) = arrayset(A, convert(T,x), 1)
 
-assign(A::Array{Any}, x::ANY, i::Real) = arrayset(A, x, to_index(i))
+assign!(A::Array{Any}, x::ANY, i::Real) = arrayset(A, x, to_index(i))
 
-assign{T}(A::Array{T}, x, i0::Real) = arrayset(A, convert(T,x), to_index(i0))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real) =
+assign!{T}(A::Array{T}, x, i0::Real) = arrayset(A, convert(T,x), to_index(i0))
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real) =
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1), to_index(i2))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real) =
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1), to_index(i2), to_index(i3))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real) =
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1), to_index(i2), to_index(i3), to_index(i4))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real, i5::Real) =
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real, i5::Real) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1), to_index(i2), to_index(i3), to_index(i4), to_index(i5))
-assign{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real, i5::Real, I::Int...) =
+assign!{T}(A::Array{T}, x, i0::Real, i1::Real, i2::Real, i3::Real, i4::Real, i5::Real, I::Int...) =
     arrayset(A, convert(T,x), to_index(i0), to_index(i1), to_index(i2), to_index(i3), to_index(i4), to_index(i5), I...)
 
-function assign{T<:Real}(A::Array, x, I::AbstractVector{T})
+function assign!{T<:Real}(A::Array, x, I::AbstractVector{T})
     for i in I
         A[i] = x
     end
     return A
 end
 
-function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int})
+function assign!{T}(A::Array{T}, X::Array{T}, I::Range1{Int})
     if length(X) != length(I); error("argument dimensions must match"); end
     copy!(A, first(I), X, 1, length(I))
     return A
 end
 
-function assign{T<:Real}(A::Array, X::AbstractArray, I::AbstractVector{T})
+function assign!{T<:Real}(A::Array, X::AbstractArray, I::AbstractVector{T})
     if length(X) != length(I); error("argument dimensions must match"); end
     count = 1
     for i in I
@@ -412,7 +412,7 @@ function assign{T<:Real}(A::Array, X::AbstractArray, I::AbstractVector{T})
     return A
 end
 
-function assign{T<:Real}(A::Array, x, i::Real, J::AbstractVector{T})
+function assign!{T<:Real}(A::Array, x, i::Real, J::AbstractVector{T})
     i = to_index(i)
     check_bounds(A, i, J)
     m = size(A, 1)
@@ -432,7 +432,7 @@ function assign{T<:Real}(A::Array, x, i::Real, J::AbstractVector{T})
     return A
 end
 
-function assign{T<:Real}(A::Array, x, I::AbstractVector{T}, j::Real)
+function assign!{T<:Real}(A::Array, x, I::AbstractVector{T}, j::Real)
     j = to_index(j)
     check_bounds(A, I, j)
     m = size(A, 1)
@@ -454,7 +454,7 @@ function assign{T<:Real}(A::Array, x, I::AbstractVector{T}, j::Real)
     return A
 end
 
-function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, j::Real)
+function assign!{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, j::Real)
     j = to_index(j)
     check_bounds(A, I, j)
     if length(X) != length(I); error("argument dimensions must match"); end
@@ -462,7 +462,7 @@ function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, j::Real)
     return A
 end
 
-function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::Range1{Int})
+function assign!{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::Range1{Int})
     check_bounds(A, I, J)
     nel = length(I)*length(J)
     if length(X) != nel ||
@@ -481,7 +481,7 @@ function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::Range1{Int})
     return A
 end
 
-function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::AbstractVector{Int})
+function assign!{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::AbstractVector{Int})
     check_bounds(A, I, J)
     nel = length(I)*length(J)
     if length(X) != nel ||
@@ -496,7 +496,7 @@ function assign{T}(A::Array{T}, X::Array{T}, I::Range1{Int}, J::AbstractVector{I
     return A
 end
 
-function assign{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{T})
+function assign!{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{T})
     check_bounds(A, I, J)
     m = size(A, 1)
     if !isa(x,AbstractArray)
@@ -526,8 +526,8 @@ function assign{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{T}
 end
 
 let assign_cache = nothing, assign_scalar_cache = nothing
-global assign
-function assign(A::Array, x, I::Union(Real,AbstractArray)...)
+global assign!
+function assign!(A::Array, x, I::Union(Real,AbstractArray)...)
     check_bounds(A, I...)
     I = indices(I)
     if !isa(x,AbstractArray)
@@ -598,20 +598,20 @@ function assign_bool_vector_1d(A::Array, X::AbstractArray, I::AbstractArray{Bool
     A
 end
 
-assign(A::Array, X::AbstractArray, I::AbstractVector{Bool}) = assign_bool_vector_1d(A, X, I)
-assign(A::Array, X::AbstractArray, I::AbstractArray{Bool}) = assign_bool_vector_1d(A, X, I)
-assign(A::Array, x, I::AbstractVector{Bool}) = assign_bool_scalar_1d(A, x, I)
-assign(A::Array, x, I::AbstractArray{Bool}) = assign_bool_scalar_1d(A, x, I)
+assign!(A::Array, X::AbstractArray, I::AbstractVector{Bool}) = assign_bool_vector_1d(A, X, I)
+assign!(A::Array, X::AbstractArray, I::AbstractArray{Bool}) = assign_bool_vector_1d(A, X, I)
+assign!(A::Array, x, I::AbstractVector{Bool}) = assign_bool_scalar_1d(A, x, I)
+assign!(A::Array, x, I::AbstractArray{Bool}) = assign_bool_scalar_1d(A, x, I)
 
-assign(A::Array, x, I::Real, J::AbstractVector{Bool}) = assign(A, x, I,find(J))
+assign!(A::Array, x, I::Real, J::AbstractVector{Bool}) = assign!(A, x, I,find(J))
 
-assign(A::Array, x, I::AbstractVector{Bool}, J::Real) = assign(A,x,find(I),J)
+assign!(A::Array, x, I::AbstractVector{Bool}, J::Real) = assign!(A,x,find(I),J)
 
-assign(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{Bool}) = assign(A, x, find(I),find(J))
+assign!(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{Bool}) = assign!(A, x, find(I),find(J))
 
-assign{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{Bool}) = assign(A, x, I,find(J))
+assign!{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{Bool}) = assign!(A, x, I,find(J))
 
-assign{T<:Real}(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{T}) = assign(A, x, find(I),J)
+assign!{T<:Real}(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{T}) = assign!(A, x, find(I),J)
 
 # get (ref with a default value)
 

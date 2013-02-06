@@ -225,9 +225,9 @@ function ref(s::SubArray, I::Union(Real,AbstractArray)...)
     end
 end
 
-assign(s::SubArray, v, i::Integer) = assign(s, v, ind2sub(size(s), i)...)
+assign!(s::SubArray, v, i::Integer) = assign!(s, v, ind2sub(size(s), i)...)
 
-function assign{T}(s::SubArray{T,2}, v, ind::Integer)
+function assign!{T}(s::SubArray{T,2}, v, ind::Integer)
     ld = size(s,1)
     i = rem(ind-1,ld)+1
     j = div(ind-1,ld)+1
@@ -235,7 +235,7 @@ function assign{T}(s::SubArray{T,2}, v, ind::Integer)
     return s
 end
 
-function assign(s::SubArray, v, is::Integer...)
+function assign!(s::SubArray, v, is::Integer...)
     index = s.first_index
     for i = 1:length(is)
         index += (is[i]-1)*s.strides[i]
@@ -244,32 +244,32 @@ function assign(s::SubArray, v, is::Integer...)
     return s
 end
 
-assign{T}(s::SubArray{T,0,AbstractArray{T,0}},v) = assign(s.parent, v)
+assign!{T}(s::SubArray{T,0,AbstractArray{T,0}},v) = assign!(s.parent, v)
 
-assign{T}(s::SubArray{T,0}, v) = assign(s.parent, v, s.first_index)
+assign!{T}(s::SubArray{T,0}, v) = assign!(s.parent, v, s.first_index)
 
 
-assign{T}(s::SubArray{T,1}, v, i::Integer) =
-    assign(s.parent, v, s.first_index + (i-1)*s.strides[1])
+assign!{T}(s::SubArray{T,1}, v, i::Integer) =
+    assign!(s.parent, v, s.first_index + (i-1)*s.strides[1])
 
-assign{T}(s::SubArray{T,2}, v, i::Integer, j::Integer) =
-    assign(s.parent, v, s.first_index +(i-1)*s.strides[1]+(j-1)*s.strides[2])
+assign!{T}(s::SubArray{T,2}, v, i::Integer, j::Integer) =
+    assign!(s.parent, v, s.first_index +(i-1)*s.strides[1]+(j-1)*s.strides[2])
 
-assign{T}(s::SubArray{T,1}, v, I::Range1{Int}) =
-    assign(s.parent, v, (s.first_index+(first(I)-1)*s.strides[1]):s.strides[1]:(s.first_index+(last(I)-1)*s.strides[1]))
+assign!{T}(s::SubArray{T,1}, v, I::Range1{Int}) =
+    assign!(s.parent, v, (s.first_index+(first(I)-1)*s.strides[1]):s.strides[1]:(s.first_index+(last(I)-1)*s.strides[1]))
 
-assign{T}(s::SubArray{T,1}, v, I::Range{Int}) =
-    assign(s.parent, v, (s.first_index+(first(I)-1)*s.strides[1]):(s.strides[1]*step(I)):(s.first_index+(last(I)-1)*s.strides[1]))
+assign!{T}(s::SubArray{T,1}, v, I::Range{Int}) =
+    assign!(s.parent, v, (s.first_index+(first(I)-1)*s.strides[1]):(s.strides[1]*step(I)):(s.first_index+(last(I)-1)*s.strides[1]))
 
-function assign{T,S<:Integer}(s::SubArray{T,1}, v, I::AbstractVector{S})
+function assign!{T,S<:Integer}(s::SubArray{T,1}, v, I::AbstractVector{S})
     t = Array(Int, length(I))
     for i = 1:length(I)
         t[i] = s.first_index + (I[i]-1)*s.strides[1]
     end
-    assign(s.parent, v, t)
+    assign!(s.parent, v, t)
 end
 
-function assign(s::SubArray, v, I::Union(Real,AbstractArray)...)
+function assign!(s::SubArray, v, I::Union(Real,AbstractArray)...)
     I = indices(I)
     j = 1 #the jth dimension in subarray
     ndp = ndims(s.parent)
@@ -286,7 +286,7 @@ function assign(s::SubArray, v, I::Union(Real,AbstractArray)...)
         j += 1
     end
 
-    assign(s.parent, v, newindexes...)
+    assign!(s.parent, v, newindexes...)
 end
 
 function stride(s::SubArray, i::Integer)

@@ -859,7 +859,7 @@
 			  ,@stmts
 			  ,@stuff
 			  ,@rini
-			  (call (top assign) ,arr ,r ,@new-idxs)
+			  (call (top assign!) ,arr ,r ,@new-idxs)
 			  ,r)))))
 
    (pattern-lambda (ref a . idxs)
@@ -1151,7 +1151,7 @@
 	(if (null? ranges)
 	    `(block (= ,oneresult ,expr)
 		    (type_goto ,initlabl)
-		    (call (top assign) ,result ,oneresult ,ri)
+		    (call (top assign!) ,result ,oneresult ,ri)
 		    (+= ,ri 1))
 	    `(for ,(car ranges)
 		  ,(construct-loops (cdr ranges)))))
@@ -1191,7 +1191,7 @@
       ;; construct loops to cycle over all dimensions of an n-d comprehension
       (define (construct-loops ranges rs)
 	(if (null? ranges)
-	    `(block (call (top assign) ,result ,expr ,ri)
+	    `(block (call (top assign!) ,result ,expr ,ri)
 		    (+= ,ri 1))
 	    `(for (= ,(cadr (car ranges)) ,(car rs))
 		  ,(construct-loops (cdr ranges) (cdr rs)))))
@@ -1226,7 +1226,7 @@
 	    `(block (= ,onekey ,(cadr expr))
 		    (= ,oneval ,(caddr expr))
 		    (type_goto ,initlabl)
-		    (call (top assign) ,result ,oneval ,onekey))
+		    (call (top assign!) ,result ,oneval ,onekey))
 	    `(for ,(car ranges)
 		  ,(construct-loops (cdr ranges)))))
 
@@ -1262,7 +1262,7 @@
       ;; construct loops to cycle over all dimensions of an n-d comprehension
       (define (construct-loops ranges rs)
 	(if (null? ranges)
-	    `(call (top assign) ,result ,(caddr expr) ,(cadr expr))
+	    `(call (top assign!) ,result ,(caddr expr) ,(cadr expr))
 	    `(for (= ,(cadr (car ranges)) ,(car rs))
 		  ,(construct-loops (cdr ranges) (cdr rs)))))
 
@@ -1309,9 +1309,9 @@
     (define (construct-loops ranges iters oneresult-dim)
       (if (null? ranges)
 	  (if (null? iters)
-	      `(block (call (top assign) ,result ,expr ,ri)
+	      `(block (call (top assign!) ,result ,expr ,ri)
 		      (+= ,ri 1))
-	      `(block (call (top assign) ,result (ref ,expr ,@(reverse iters)) ,ri)
+	      `(block (call (top assign!) ,result (ref ,expr ,@(reverse iters)) ,ri)
 		      (+= ,ri 1)) )
 	  (if (eq? (car ranges) `:)
 	      (let ((i (gensy)))
