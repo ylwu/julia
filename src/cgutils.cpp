@@ -118,14 +118,14 @@ static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool as_struct=fal
     if (jl_is_cpointer_type(jt)) {
         jl_value_t *jet = jl_tparam0(jt);
         clang::CanQualType lt;
-        if ((jl_value_t*)jl_bottom_type) {
+        if (jet == (jl_value_t*)jl_bottom_type) {
             lt = cT_void;
         } else {
             lt = julia_type_to_clang(jet);
             if (lt == cT_void)
                 return cT_void;
         }
-        clang_astcontext->getPointerType(lt);
+        return clang_astcontext->getPointerType(lt);
     }
     if (jl_is_bits_type(jt)) {
         int nb = jl_bitstype_nbits(jt);
