@@ -162,6 +162,7 @@ extern "C" void *jl_value_to_pointer(jl_value_t *jt, jl_value_t *v, int argn,
             return alloc_temp_arg_copy(jl_bits_data(v), osz);
         }
         if (jl_is_struct_type(jvt) && jl_is_leaf_type(jvt) && !jl_is_array_type(jvt)) {
+            //TODO: above test is not correct, should be testing for subtype
             return v + 1;
         }
         goto value_to_pointer_error;
@@ -256,6 +257,7 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
             return builder.CreateBitCast(emit_arrayptr(emit_nthptr(jv,1)), ty);
         }
         if (jl_is_struct_type(aty) && jl_is_leaf_type(aty) && !jl_is_array_type(aty)) {
+            //TODO: above test is too strict, should be subtype
             if (!addressOf) {
                 emit_error("ccall: expected addressOf operator", ctx);
                 return literal_pointer_val(jl_nothing);

@@ -50,3 +50,14 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
 // (RValue and ReturnValueSlot, CallArgList are easy to work with)  
 // (TargetDecl can just be null -- it is info from Callee target to copy to call)
 // Fn will need attribute NoUnwind (or it gets turned into an invoke)
+//
+//
+// for structs, need
+// http://clang.llvm.org/doxygen/classclang_1_1FieldDecl.html for each field
+// then create a http://clang.llvm.org/doxygen/classclang_1_1RecordDecl.html#a7351c179c5708122c856eb9ffb59c634// as a http://clang.llvm.org/doxygen/classclang_1_1TagDecl.html
+// and setTemplateParameterListsInfo to a
+// http://clang.llvm.org/doxygen/classclang_1_1TemplateParameterList.html
+// constructed of the fields
+// then can http://clang.llvm.org/doxygen/classclang_1_1ASTContext.html#a2f2e06312812efc11ce91abe0695ba75
+// and http://clang.llvm.org/doxygen/classclang_1_1ASTContext.html#a7e70bb7eebf01548a0cab752e390ba37
+// and that's it!
