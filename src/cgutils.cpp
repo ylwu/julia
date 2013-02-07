@@ -89,8 +89,7 @@ static Type *julia_type_to_llvm(jl_value_t *jt)
 // --- mapping between julia and llvm types ---
 // --- this must be kept in sync with above ---
 static jl_value_t *jl_signed_type=NULL;
-static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool as_struct=false) {
-    // NOTE: cT_void is poisonous, since we can't return NULL
+static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool *error, bool as_struct=false) {
     if (as_struct && jl_is_struct_type(jt) && !jl_is_array_type(jt)) {
         assert(0);
 //        if (!jl_is_leaf_type(jt))
@@ -118,13 +117,8 @@ static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool as_struct=fal
     if (jl_is_cpointer_type(jt)) {
         jl_value_t *jet = jl_tparam0(jt);
         clang::CanQualType lt;
-        if (jet == (jl_value_t*)jl_bottom_type) {
-            lt = cT_void;
-        } else {
-            lt = julia_type_to_clang(jet);
-            if (lt == cT_void)
-                return cT_void;
-        }
+        lt = julia_type_to_clang(jet,error);
+        *error = false;
         return clang_astcontext->getPointerType(lt);
     }
     if (jl_is_bits_type(jt)) {
@@ -138,14 +132,14 @@ static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool as_struct=fal
             if (nb == 32)  return cT_int32;
             if (nb == 64)  return cT_int64;
             if (nb == 128) return cT_int128;
-            else           return cT_void;
+            else           { *error = true; return cT_void; }
         } else {    
             if (nb == 8)   return cT_uint8;
             if (nb == 16)  return cT_uint16;
             if (nb == 32)  return cT_uint32;
             if (nb == 64)  return cT_uint64;
             if (nb == 128) return cT_uint128;
-            else           return cT_void;
+            else           { *error = true; return cT_void; }
         }
     }
     if (jt == (jl_value_t*)jl_bottom_type) return cT_void;

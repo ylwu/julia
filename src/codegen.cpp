@@ -65,6 +65,7 @@ static ExecutionEngine *jl_ExecutionEngine;
 static DIBuilder *dbuilder;
 static std::map<int, std::string> argNumberStrings;
 static FunctionPassManager *FPM;
+static TargetOptions options;
 
 // clang state
 #undef B0
@@ -2774,25 +2775,24 @@ void init_julia_clang_env(StringRef TT) {
     //copied from http://www.ibm.com/developerworks/library/os-createcompilerllvm2/index.html
     clang_compiler = new clang::CompilerInstance;
     clang_compiler->createDiagnostics(0,NULL);
-    clang::TargetOptions to;
-    to.Triple = TT;
-    clang::TargetInfo *tin = clang::TargetInfo::CreateTargetInfo(clang_compiler->getDiagnostics(), to);
+    clang::TargetOptions *to = new clang::TargetOptions();
+    to->Triple = TT;
+    clang::TargetInfo *tin = clang::TargetInfo::CreateTargetInfo(clang_compiler->getDiagnostics(), *to);
     clang_compiler->setTarget(tin);
     clang_compiler->createFileManager();
     clang_compiler->createSourceManager(clang_compiler->getFileManager());
     clang_compiler->createPreprocessor();
     clang_compiler->createASTContext();
     clang_astcontext = &clang_compiler->getASTContext();
-    DataLayout TD = DataLayout(tin->getTargetDescription());
+    DataLayout *TD = new DataLayout(tin->getTargetDescription());
     clang_cgm = new clang::CodeGen::CodeGenModule(
             *clang_astcontext,
             clang_compiler->getCodeGenOpts(),
             *jl_Module,
-            TD,
+            *TD,
             clang_compiler->getDiagnostics());
     clang_cgt = new clang::CodeGen::CodeGenTypes(*clang_cgm);
     clang_cgf = new clang::CodeGen::CodeGenFunction(*clang_cgm);
-
     
     cT_int1  = clang_astcontext->BoolTy;
     cT_int8  = clang_astcontext->SignedCharTy;
@@ -2840,7 +2840,6 @@ extern "C" void jl_init_codegen(void)
 #error "only maintaining support for LLVM 3.1 on Windows"
 #endif
 #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 1
-    TargetOptions options = TargetOptions();
     //options.PrintMachineCode = true; //Print machine code produced during JIT compiling
 #ifdef DEBUG
     options.JITEmitDebugInfo = true;
