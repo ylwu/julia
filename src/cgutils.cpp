@@ -141,7 +141,7 @@ static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool *error, bool 
         if (jl_complex_type == NULL) {
             jl_complex_type = jl_get_global(jl_base_module,jl_symbol("Complex")); //TODO: move Complex to Core
         }
-        if (jl_complex_type && jl_subtype(jt, jl_complex_type, 0)) {
+        if (as_struct && jl_complex_type && jl_subtype(jt, jl_complex_type, 0)) {
             if (nb == 64)  return cT_complex64;
             if (nb == 128) return cT_complex128;
             else           { *error = true; return cT_void; }
