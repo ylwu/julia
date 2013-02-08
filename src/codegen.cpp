@@ -73,6 +73,7 @@ static TargetOptions options;
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CodeGenOptions.h>
 #include <clang/AST/ASTContext.h>
+#include <clang/AST/DeclTemplate.h>
 #include <clang/Basic/Specifiers.h>
 #include <CodeGen/CodeGenModule.h>
 #include <CodeGen/CodeGenTypes.h>

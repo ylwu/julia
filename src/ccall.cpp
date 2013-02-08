@@ -280,14 +280,14 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
             msg << argn;
             emit_typecheck(jv, jt, msg.str(), ctx);
         }
-        //TODO: check instead that prefix matches
+        //TODO: maybe check instead that prefix matches?
         //if (!jl_is_struct_type(aty))
         //    emit_typecheck(emit_typeof(jv), (jl_value_t*)jl_struct_kind, "ccall: Struct argument called with something that isn't a CompositeKind", ctx);
         // //safe thing would be to also check that jl_typeof(aty)->size > sizeof(ty) here and/or at runtime
         Type *pty = PointerType::get(ty,0);
-        assert (ty->isStructTy() && (Type*)((jl_struct_type_t*)jt)->struct_decl == ty);
+        assert (ty->isStructTy());
         Value *pjv = builder.CreateBitCast(emit_nthptr_addr(jv, (size_t)1), pty);
-        return builder.CreateLoad(pjv, false);
+        return pjv;
     }
     // TODO: error for & with non-pointer argument type
     assert(jl_is_bits_type(jt));
@@ -575,18 +575,35 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         }
 #endif
         */
-        argvals.add(clang::CodeGen::RValue::get(
-                julia_to_native(llargty, jargty, arg, argi,
-                    addressOf, ai+1, ctx)),
-            largty);
+        Value *v = julia_to_native(llargty, jargty, arg, argi,
+                    addressOf, ai+1, ctx);
+        clang::CodeGen::RValue rv = (llargty->isStructTy() ?
+                clang::CodeGen::RValue::getAggregate(v, false) :
+                clang::CodeGen::RValue::get(v));
+        argvals.add(rv, largty);
     }
     // the actual call
+    clang::CodeGen::ReturnValueSlot return_slot;
+    Value *result = NULL;
+    if (isa<clang::RecordType>(lrt)) {
+        result = builder.CreateCall(jlallocobj_func,
+                ConstantInt::get(T_size,
+                     sizeof(void*)+((jl_struct_type_t*)rt)->size));
+        builder.CreateStore(literal_pointer_val((jl_value_t*)rt),
+                emit_nthptr_addr(result, (size_t)0));
+        return_slot = clang::CodeGen::ReturnValueSlot(
+                builder.CreateBitCast(emit_nthptr_addr(result, (size_t)1),
+                    PointerType::get(clang_cgt->ConvertType(lrt),0)),
+                false);
+    }
     clang_cgf->Builder.SetInsertPoint( builder.GetInsertBlock(), builder.GetInsertPoint() );
     clang::CodeGen::RValue rv = clang_cgf->EmitCall(
-            *cgfi, llvmf, clang::CodeGen::ReturnValueSlot(), //todo: ReturnValueSlot
-            argvals, NULL, NULL); //TODO: we need a TargetDecl with NoUnwind
-    assert(rv.isScalar());
-    Value *result = rv.getScalarVal(); //TODO: this is obviously not generally correct
+            *cgfi, llvmf, return_slot,
+            argvals, NULL, NULL); //TODO: we might need a TargetDecl with NoUnwind
+    if (result == NULL) {
+        assert(rv.isScalar());
+        result = rv.getScalarVal();
+    }
     // restore temp argument area stack pointer
     if (haspointers) {
         assert(saveloc != NULL);

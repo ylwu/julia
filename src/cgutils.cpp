@@ -86,30 +86,40 @@ static Type *julia_type_to_llvm(jl_value_t *jt)
 }
 
 
-// --- mapping between julia and llvm types ---
+// --- mapping between julia and clang types ---
 // --- this must be kept in sync with above ---
 static jl_value_t *jl_signed_type=NULL;
 static clang::CanQualType julia_type_to_clang(jl_value_t *jt, bool *error, bool as_struct=false) {
     if (as_struct && jl_is_struct_type(jt) && !jl_is_array_type(jt)) {
-        assert(0);
-//        if (!jl_is_leaf_type(jt))
-//           return cT_void;
-//        jl_struct_type_t *jst = (jl_struct_type_t*)jt;
-//        if (jst->struct_decl == NULL) {
-//            size_t ntypes = jl_tuple_len(jst->types);
-//            if (ntypes == 0)
-//                return cT_void;
-//            std::vector<clang::CanQualType> latypes;
-//            size_t i;
-//            for(i = 0; i < ntypes; i++) {
-//                jl_value_t *ty = jl_tupleref(jst->types, i);
-//                clang::CanQualType lty = julia_type_to_clang(ty);
-//                latypes.push_back(lty);
-//            }
-//            jst->struct_decl = (void*)StructType::create(latypes, jst->name->name->name);
-//        }
-//        clang::CanQualType t = *(clang::CanQualType*)jst->struct_decl;
-//        return t;
+        if (!jl_is_leaf_type(jt)) {
+            *error = true;
+            return cT_void;
+        }
+        jl_struct_type_t *jst = (jl_struct_type_t*)jt;
+        if (jst->struct_decl == NULL) {
+            size_t ntypes = jl_tuple_len(jst->types);
+            if (ntypes == 0)
+                return cT_void;
+            size_t i;
+            clang::RecordDecl *strct = clang::RecordDecl::Create(*clang_astcontext, clang::TTK_Struct,
+                    clang_astcontext->getTranslationUnitDecl(),
+                    clang::SourceLocation(), clang::SourceLocation(), NULL, NULL);
+            strct->startDefinition();
+            for(i = 0; i < ntypes; i++) {
+                jl_value_t *ty = jl_tupleref(jst->types, i);
+                clang::CanQualType lty = julia_type_to_clang(ty, error);
+                if (*error)
+                    return cT_void;
+                clang::FieldDecl *D = clang::FieldDecl::Create(*clang_astcontext, strct,
+                    clang::SourceLocation(), clang::SourceLocation(),
+                    NULL, lty, 0, 0, false, clang::ICIS_NoInit);
+                strct->addDecl(D);
+            }
+            strct->completeDefinition();
+            clang::CanQualType strct_ty = clang_astcontext->getCanonicalType(clang_astcontext->getRecordType(strct));
+            jst->struct_decl = (void*) new clang::CanQualType(strct_ty);
+        }
+        return *(clang::CanQualType*)jst->struct_decl;
     }
     if (jt == (jl_value_t*)jl_bool_type) return cT_int1;
     if (jt == (jl_value_t*)jl_float32_type) return cT_float32;
