@@ -25,7 +25,8 @@ b = ccall((:cgtest, "./libccalltest"), Complex128, (Complex128,), a)
 @test b == cf64 + 1 - 2im
 b = unsafe_ref(ccall((:cgptest, "./libccalltest"), Ptr{Complex128}, (Ptr{Complex128},), &a))
 @test !(a === b)
-@test a == b == cf64 + 1 - 2im
+@test a == cf64
+@test b == cf64 + 1 - 2im
 
 cf32 = 3.34f0+53.2f0im
 a = copy(cf32)
@@ -34,7 +35,8 @@ b = ccall((:cftest, "./libccalltest"), Complex64, (Complex64,), a)
 @test b == cf32 + 1 - 2im
 b = unsafe_ref(ccall((:cfptest, "./libccalltest"), Ptr{Complex64}, (Ptr{Complex64},), &a))
 @test !(a === b)
-@test a == b == cf32 + 1 - 2im
+@test a == cf32
+@test b == cf32 + 1 - 2im
 
 
 # Tests for native Julia data types
