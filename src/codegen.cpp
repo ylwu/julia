@@ -2,6 +2,12 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
 #endif
+
+#pragma push_macro("DEBUG")
+#pragma push_macro("NDEBUG")
+#undef DEBUG
+#undef NDEBUG
+
 #include "llvm/DerivedTypes.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h"
@@ -43,9 +49,6 @@
 #include <vector>
 #include <set>
 #include <cstdio>
-#ifdef DEBUG
-#undef NDEBUG
-#endif
 #include <cassert>
 using namespace llvm;
 
@@ -68,8 +71,7 @@ static FunctionPassManager *FPM;
 static TargetOptions options;
 
 // clang state
-#undef B0
-#undef DEBUG
+#undef B0 //rom termios
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CodeGenOptions.h>
 #include <clang/AST/ASTContext.h>
@@ -104,7 +106,11 @@ static clang::CanQualType cT_float64;
 static clang::CanQualType cT_void;
 static clang::CanQualType cT_pvoid;
 
-#undef DEBUG
+#pragma pop_macro("DEBUG")
+#pragma pop_macro("NDEBUG")
+#ifdef DEBUG
+#undef NDEBUG
+#endif
 
 // llvm types
 static Type *jl_value_llvmt;
