@@ -596,9 +596,19 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
                 false);
     }
     clang_cgf->Builder.SetInsertPoint( builder.GetInsertBlock(), builder.GetInsertPoint() );
+    BasicBlock* alloca_bb = &ctx->f->getEntryBlock();
+    llvm::Instruction *alloca_bb_ptr = NULL;
+    if (alloca_bb->empty()) {
+        llvm::Value *Undef = llvm::UndefValue::get(T_int32);
+        clang_cgf->AllocaInsertPt = alloca_bb_ptr = new llvm::BitCastInst(Undef, T_int32, "", alloca_bb);
+    } else
+        clang_cgf->AllocaInsertPt = &alloca_bb.front();
     clang::CodeGen::RValue rv = clang_cgf->EmitCall(
             *cgfi, llvmf, return_slot,
             argvals, NULL, NULL); //TODO: we might need a TargetDecl with NoUnwind
+    clang_cgf->AllocaInsertPt = 0; // free this ptr reference
+    if (alloca_bb_ptr)
+        alloca_bb_ptr->eraseFromParent();
     if (result == NULL) {
         assert(rv.isScalar());
         result = rv.getScalarVal();
