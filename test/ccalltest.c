@@ -61,6 +61,20 @@ complex double* cgptest(complex double *a) {
     return a;
 }
 
+complex float cftest(complex float a) {
+    //Unpack a ComplexPair{Float32} struct
+    if (verbose) printf("%g + %g i\n", creal(a), cimag(a));
+    a += 1 - 2i;
+    return a;
+}
+
+complex float* cfptest(complex float *a) {
+    //Unpack a ComplexPair{Float64} struct
+    if (verbose) printf("%g + %g i\n", creal(*a), cimag(*a));
+    *a += 1 - 2i;
+    return a;
+}
+
 complex_t* cptest(complex_t *a) {
     //Unpack a ComplexPair{Int} struct pointer
     if (verbose) printf("%ld + %ld i\n", a->real, a->imag);

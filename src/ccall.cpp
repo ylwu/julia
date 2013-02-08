@@ -286,8 +286,7 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
         // //safe thing would be to also check that jl_typeof(aty)->size > sizeof(ty) here and/or at runtime
         Type *pty = PointerType::get(ty,0);
         assert (ty->isStructTy());
-        Value *pjv = builder.CreateBitCast(emit_nthptr_addr(jv, (size_t)1), pty);
-        return pjv;
+        return builder.CreateBitCast(emit_nthptr_addr(jv, (size_t)1), pty);
     }
     // TODO: error for & with non-pointer argument type
     assert(jl_is_bits_type(jt));
@@ -297,8 +296,8 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
     emit_typecheck(jv, jt, msg.str(), ctx);
     Value *p = bitstype_pointer(jv);
     return builder.CreateLoad(builder.CreateBitCast(p,
-                                                    PointerType::get(ty,0)),
-                              false);
+                PointerType::get(ty,0)),
+            false);
 }
 
 
@@ -454,7 +453,7 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         fargt.push_back(va);
 
     // some special functions
-    if (fptr == &jl_array_ptr) {
+    if (fptr == &jl_array_ptr) { //TODO: broken: fptr is typically NULL here
         Type* llrt = clang_cgt->ConvertType(lrt);
         assert(llrt->isPointerTy());
         Value *ary = emit_expr(args[4], ctx);
@@ -534,7 +533,7 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
     clang::CodeGen::CallArgList argvals;
     int last_depth = ctx->argDepth;
     for(i=4; i < nargs+1; i+=2) {
-        int ai = (i-4)/2;
+        size_t ai = (i-4)/2;
         jl_value_t *argi = args[i];
         bool addressOf = false;
         if (jl_is_expr(argi) && ((jl_expr_t*)argi)->head == amp_sym) {

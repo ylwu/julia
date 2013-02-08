@@ -27,6 +27,16 @@ b = unsafe_ref(ccall((:cgptest, "./libccalltest"), Ptr{ComplexPair{Float64}}, (P
 @test !(a === b)
 @test a == b == cf64 + 1 - 2im
 
+cf32 = ComplexPair{Float32}(3.34f0,53.2f0)
+a = copy(cf32)
+b = ccall((:cftest, "./libccalltest"), ComplexPair{Float32}, (ComplexPair{Float32},), a)
+@test a == cf32
+@test b == cf32 + 1 - 2im
+b = unsafe_ref(ccall((:cfptest, "./libccalltest"), Ptr{ComplexPair{Float32}}, (Ptr{ComplexPair{Float32}},), &a))
+@test !(a === b)
+@test a == b == cf32 + 1 - 2im
+
+
 # Tests for native Julia data types
 @test_fails ccall((:cptest, "./libccalltest"), Ptr{ComplexPair{Int}}, (Ptr{ComplexPair{Int}},), a)
 @test_fails ccall((:cptest, "./libccalltest"), Ptr{ComplexPair{Int}}, (ComplexPair{Int},), &a)
@@ -49,7 +59,7 @@ a = copy(ci32)
 ba = ccall((:test_2a, "./libccalltest"), ComplexPair{Int32}, (ComplexPair{Int32},), a)
 bb = ccall((:test_2b, "./libccalltest"), ComplexPair{Int32}, (ComplexPair{Int32},), a)
 @test a == ci32
-#@test ba == bb == ci32 + 1 - 2im #TODO: fix this case
+@test ba == bb == ci32 + 1 - 2im #TODO: fix this case
 
 ci64 = ComplexPair{Int64}(int64(20),int64(51))
 a = copy(ci64)
