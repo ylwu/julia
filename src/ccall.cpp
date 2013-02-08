@@ -162,8 +162,8 @@ extern "C" void *jl_value_to_pointer(jl_value_t *jt, jl_value_t *v, int argn,
             return alloc_temp_arg_copy(jl_bits_data(v), osz);
         }
         if (jl_is_struct_type(jvt) && jl_is_leaf_type(jvt) && !jl_is_array_type(jvt)) {
-            //TODO: above test is not correct, should be testing for subtype
-            return v + 1;
+            if (jl_subtype(jvt, jt, 0))
+                return v + 1;
         }
         goto value_to_pointer_error;
     }
@@ -246,10 +246,11 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
     }
     else if (jl_is_cpointer_type(jt)) {
         assert(ty->isPointerTy());
+        jl_value_t *jet = jl_tparam0(jt);
         jl_value_t *aty = expr_type(argex, ctx);
         if (jl_is_array_type(aty) &&
-            (jl_tparam0(jt) == jl_tparam0(aty) ||
-             jl_tparam0(jt) == (jl_value_t*)jl_bottom_type)) {
+            (jet == jl_tparam0(aty) ||
+             jet == (jl_value_t*)jl_bottom_type)) {
             // array to pointer
             return builder.CreateBitCast(emit_arrayptr(jv), ty);
         }
@@ -257,7 +258,10 @@ static Value *julia_to_native(Type *ty, jl_value_t *jt, Value *jv,
             return builder.CreateBitCast(emit_arrayptr(emit_nthptr(jv,1)), ty);
         }
         if (jl_is_struct_type(aty) && jl_is_leaf_type(aty) && !jl_is_array_type(aty)) {
-            //TODO: above test is too strict, should be subtype
+            if (!jl_subtype(aty, jet, 0)) {
+                emit_error("ccall: argument not a subtype of parameter", ctx);
+                return literal_pointer_val(jl_nothing);
+            }
             if (!addressOf) {
                 emit_error("ccall: expected addressOf operator", ctx);
                 return literal_pointer_val(jl_nothing);
