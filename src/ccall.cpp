@@ -551,7 +551,15 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
             jargty = jl_tupleref(tt,ai);
         }
         Value *arg;
-        Type *llargty = clang_cgt->ConvertType(largty);
+        Type *llargty;
+        bool is_complex = false;
+        if (!isa<clang::ComplexType>(lrt)) {
+            llargty = clang_cgt->ConvertType(largty);
+        } else {
+            assert(jl_is_bits_type(jargty));
+            llargty = Type::getIntNTy(getGlobalContext(), jl_bitstype_nbits(jargty));
+            is_complex = true;
+        }
         if (jargty == (jl_value_t*)jl_any_type) {
             arg = emit_expr(argi, ctx, true);
         }
@@ -576,8 +584,19 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         */
         Value *v = julia_to_native(llargty, jargty, arg, argi,
                     addressOf, ai+1, ctx);
-        clang::CodeGen::RValue rv = (llargty->isStructTy() ?
-                clang::CodeGen::RValue::getAggregate(v, false) :
+        std::pair <Value*, Value*> complexv;
+        if (is_complex) {
+            Value *temp = builder.CreateAlloca(llargty);
+            builder.CreateStore(v, temp);
+            llargty = clang_cgt->ConvertType(lrt);
+            temp = builder.CreateBitCast(temp, PointerType::get(llargty,0));
+            Value *re = builder.CreateLoad(builder.CreateConstGEP2_32(temp, 0, 0));
+            Value *im = builder.CreateLoad(builder.CreateConstGEP2_32(temp, 0, 1));
+            complexv = std::make_pair(re,im);
+        }
+        clang::CodeGen::RValue rv = (
+                is_complex ? clang::CodeGen::RValue::getComplex(complexv) :
+                llargty->isStructTy() ? clang::CodeGen::RValue::getAggregate(v, false) :
                 clang::CodeGen::RValue::get(v));
         argvals.add(rv, largty);
     }
@@ -602,7 +621,7 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         llvm::Value *Undef = llvm::UndefValue::get(T_int32);
         clang_cgf->AllocaInsertPt = alloca_bb_ptr = new llvm::BitCastInst(Undef, T_int32, "", alloca_bb);
     } else
-        clang_cgf->AllocaInsertPt = &alloca_bb.front();
+        clang_cgf->AllocaInsertPt = &alloca_bb->front();
     clang::CodeGen::RValue rv = clang_cgf->EmitCall(
             *cgfi, llvmf, return_slot,
             argvals, NULL, NULL); //TODO: we might need a TargetDecl with NoUnwind
@@ -610,8 +629,25 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
     if (alloca_bb_ptr)
         alloca_bb_ptr->eraseFromParent();
     if (result == NULL) {
-        assert(rv.isScalar());
-        result = rv.getScalarVal();
+        if (rv.isScalar())
+            result = rv.getScalarVal();
+        else if (rv.isComplex()) {
+            assert(jl_is_bits_type(rt));
+            std::pair<Value*, Value*> C = rv.getComplexVal();
+            Type *llrt = clang_cgt->ConvertType(lrt);
+            result = builder.CreateAlloca(llrt);
+            Value *slot = builder.CreateConstGEP2_32(result, 0, 0);
+            builder.CreateStore(C.first, slot);
+            slot = builder.CreateConstGEP2_32(result, 0, 1);
+            builder.CreateStore(C.second, slot);
+            Type *rtype = Type::getIntNTy(getGlobalContext(), jl_bitstype_nbits(rt));
+            result = builder.CreateLoad(
+                    builder.CreateBitCast(
+                        result,
+                        PointerType::get(rtype,0)));
+        } else {
+            assert(0);
+        }
     }
     // restore temp argument area stack pointer
     if (haspointers) {

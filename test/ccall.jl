@@ -9,7 +9,7 @@ ccall_test_func(x) = ccall((:testUcharX, "./libccalltest"), Int32, (Uint8,), x)
 # Tests for passing and returning structs
 copy{T}(x::ComplexPair{T}) = ComplexPair{T}(x.re,x.im)
 
-ci = complex(20,51)
+ci = 20+51im
 a = copy(ci)
 b = ccall((:ctest, "./libccalltest"), ComplexPair{Int}, (ComplexPair{Int},), a)
 @test a == ci
@@ -18,21 +18,21 @@ b = unsafe_ref(ccall((:cptest, "./libccalltest"), Ptr{ComplexPair{Int}}, (Ptr{Co
 @test !(a === b)
 @test a == b == ci + 1 - 2im
 
-cf64 = ComplexPair{Float64}(2.84,5.2)
+cf64 = 2.84+5.2im
 a = copy(cf64)
-b = ccall((:cgtest, "./libccalltest"), ComplexPair{Float64}, (ComplexPair{Float64},), a)
+b = ccall((:cgtest, "./libccalltest"), Complex128, (Complex128,), a)
 @test a == cf64
 @test b == cf64 + 1 - 2im
-b = unsafe_ref(ccall((:cgptest, "./libccalltest"), Ptr{ComplexPair{Float64}}, (Ptr{ComplexPair{Float64}},), &a))
+b = unsafe_ref(ccall((:cgptest, "./libccalltest"), Ptr{Complex128}, (Ptr{Complex128},), &a))
 @test !(a === b)
 @test a == b == cf64 + 1 - 2im
 
-cf32 = ComplexPair{Float32}(3.34f0,53.2f0)
+cf32 = 3.34f0+53.2f0im
 a = copy(cf32)
-b = ccall((:cftest, "./libccalltest"), ComplexPair{Float32}, (ComplexPair{Float32},), a)
+b = ccall((:cftest, "./libccalltest"), Complex64, (Complex64,), a)
 @test a == cf32
 @test b == cf32 + 1 - 2im
-b = unsafe_ref(ccall((:cfptest, "./libccalltest"), Ptr{ComplexPair{Float32}}, (Ptr{ComplexPair{Float32}},), &a))
+b = unsafe_ref(ccall((:cfptest, "./libccalltest"), Ptr{Complex64}, (Ptr{Complex64},), &a))
 @test !(a === b)
 @test a == b == cf32 + 1 - 2im
 

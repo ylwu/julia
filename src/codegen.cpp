@@ -125,6 +125,8 @@ static Type *T_uint32;
 static Type *T_int64;
 static Type *T_pint64;
 static Type *T_uint64;
+static Type *T_int128;
+static Type *T_uint128;
 static Type *T_char;
 static Type *T_size;
 static Type *T_psize;
@@ -2487,8 +2489,10 @@ static void init_julia_llvm_env(Module *m)
     T_pint32 = PointerType::get(T_int32, 0);
     T_int64 = Type::getInt64Ty(getGlobalContext());
     T_pint64 = PointerType::get(T_int64, 0);
+    T_int128 = Type::getIntNTy(getGlobalContext(),128);
     T_uint8 = T_int8;   T_uint16 = T_int16;
     T_uint32 = T_int32; T_uint64 = T_int64;
+    T_uint128 = T_int128;
 #ifdef __LP64__
     T_size = T_uint64;
 #else
