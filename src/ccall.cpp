@@ -448,7 +448,14 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
             nargs--;
         }
     }
-    //todo: check if calling convention is valid for target
+    clang::TargetInfo::CallingConvCheckResult A =
+        clang_compiler->getTarget().checkCallingConvention(cc);
+    if (A != clang::TargetInfo::CCCR_OK) {
+        JL_PRINTF(JL_STDERR,
+                "Warning: calling convention %s not supported on this machine, using default instead\n",
+                clang::FunctionType::getNameForCallConv(cc).str().data());
+        cc = clang_compiler->getTarget().getDefaultCallingConv();
+    }
     
     if ((va==cT_void && nargty != (nargs-2)/2) ||
         (va!=cT_void && nargty  > (nargs-2)/2))
@@ -457,14 +464,16 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         fargt.push_back(va);
 
     // some special functions
-    if (fptr == &jl_array_ptr) { //TODO: broken: fptr is typically NULL here
+    if (fptr == &jl_array_ptr ||
+        (strcmp(f_name,"jl_array_ptr")==0 && f_lib==NULL)) {
         Type* llrt = clang_cgt->ConvertType(lrt);
         assert(llrt->isPointerTy());
         Value *ary = emit_expr(args[4], ctx);
         JL_GC_POP();
         return mark_julia_type(builder.CreateBitCast(emit_arrayptr(ary),llrt),rt);
     }
-    if (fptr == &jl_value_ptr) {
+    if (fptr == &jl_value_ptr ||
+       (strcmp(f_name,"jl_value_ptr")==0 && f_lib==NULL)) {
         Type* llrt = clang_cgt->ConvertType(lrt);
         assert(llrt->isPointerTy());
         Value *ary = emit_expr(args[4], ctx);
@@ -608,6 +617,8 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
     clang::CodeGen::ReturnValueSlot return_slot;
     Value *result = NULL;
     if (isa<clang::RecordType>(lrt)) {
+        // pre-allocate a return value structure
+        // clang will make sure this is used efficiently (zero-copy)
         result = builder.CreateCall(jlallocobj_func,
                 ConstantInt::get(T_size,
                      sizeof(void*)+((jl_struct_type_t*)rt)->size));
@@ -617,8 +628,14 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
                 builder.CreateBitCast(emit_nthptr_addr(result, (size_t)1),
                     PointerType::get(clang_cgt->ConvertType(lrt),0)),
                 false);
+        make_gcroot(result, ctx);
     }
+    // setup the environment to clang's expecations
     clang_cgf->Builder.SetInsertPoint( builder.GetInsertBlock(), builder.GetInsertPoint() );
+    // clang expects to alloca memory before the AllocaInsertPt
+    // typically, clang would create this pointer when it started emitting the function
+    // instead, we create a dummy reference here
+    // for efficiency, we avoid creating a new placehold instruction if possible
     BasicBlock* alloca_bb = &ctx->f->getEntryBlock();
     llvm::Instruction *alloca_bb_ptr = NULL;
     if (alloca_bb->empty()) {
@@ -626,12 +643,15 @@ static Value *emit_ccall(jl_value_t **args, size_t nargs, jl_codectx_t *ctx)
         clang_cgf->AllocaInsertPt = alloca_bb_ptr = new llvm::BitCastInst(Undef, T_int32, "", alloca_bb);
     } else
         clang_cgf->AllocaInsertPt = &alloca_bb->front();
+    // emit the actual call
     clang::CodeGen::RValue rv = clang_cgf->EmitCall(
             *cgfi, llvmf, return_slot,
-            argvals, NULL, NULL); //TODO: we might need a TargetDecl with NoUnwind
+            argvals, NULL, NULL);
+    // cleanup the environment
     clang_cgf->AllocaInsertPt = 0; // free this ptr reference
     if (alloca_bb_ptr)
         alloca_bb_ptr->eraseFromParent();
+    // extract the result from clang
     if (result == NULL) {
         if (rv.isScalar())
             result = rv.getScalarVal();
