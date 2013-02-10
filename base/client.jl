@@ -88,9 +88,13 @@ function eval_user_input(ast::ANY, show_value)
                     if have_color
                         print(answer_color())
                     end
-                    try repl_show(value)
-                    catch err
-                        throw(ShowError(value,err))
+                    if isgeneric(value) && !isa(value,CompositeKind) && isa(ast,Expr) && ast.head === :method
+                        print("# method added to generic function ", value.env.name)
+                    else
+                        try repl_show(value)
+                        catch err
+                            throw(ShowError(value,err))
+                        end
                     end
                     println()
                 end
@@ -161,7 +165,7 @@ end
 
 function parse_input_line(s::String)
     # s = bytestring(s)
-    # (expr, pos) = parse(s, 1, true)
+    # (expr, pos) = parse(s, 1)
     # (ex, pos) = ccall(:jl_parse_string, Any,
     #                   (Ptr{Uint8},Int32,Int32),
     #                   s, int32(pos)-1, 1)
@@ -217,7 +221,11 @@ function process_options(args::Array{Any,1})
             require(args[i])
         elseif args[i]=="-p"
             i+=1
-            np = int32(args[i])
+            if i > length(args) || !isdigit(args[i][1])
+                np = CPU_CORES
+            else
+                np = int(args[i])
+            end
             addprocs_local(np-1)
         elseif args[i]=="--machinefile"
             i+=1
@@ -297,19 +305,19 @@ function _start()
     #atexit(()->flush(STDOUT))
     try
         global const Workqueue = WorkItem[]
-        global const Waiting = Dict(64)
+        global const Waiting = Dict()
 
-        if !anyp(a->(a=="--worker"), ARGS)
+        if !any(a->(a=="--worker"), ARGS)
             # start in "head node" mode
             global const Scheduler = Task(()->event_loop(true), 1024*1024)
-            global PGRP;
+            global PGRP
             PGRP.myid = 1
             assert(PGRP.np == 0)
             push!(PGRP.workers,LocalProcess())
             push!(PGRP.locs,("",0))
             PGRP.np = 1
             # make scheduler aware of current (root) task
-            enq_work(roottask_wi)
+            unshift!(Workqueue, roottask_wi)
             yield()
         end
 

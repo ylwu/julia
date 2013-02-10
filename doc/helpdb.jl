@@ -246,7 +246,7 @@
 
 "),
 
-(E"Getting Around",E"Base",E"load",E"load(\"file\")
+(E"Getting Around",E"Base",E"require",E"require(\"file\")
 
    Evaluate the contents of a source file
 
@@ -505,6 +505,17 @@
 
 "),
 
+(E"Iteration",E"Base",E"zip",E"zip(iters...)
+
+   For a set of iterable objects, returns an iterable of tuples, where
+   the >>``<<i``th tuple contains the >>``<<i``th component of each
+   input iterable.
+
+   Note that \"zip\" is it's own inverse: [zip(zip(a...)...)...] ==
+   [a...]
+
+"),
+
 (E"General Collections",E"Base",E"isempty",E"isempty(collection)
 
    Determine whether a collection is empty (has no elements).
@@ -603,28 +614,14 @@
 
 "),
 
-(E"Iterable Collections",E"Base",E"count",E"count(itr)
-
-   Count the number of boolean elements in \"itr\" which are \"true\"
-   rather than \"false\".
-
-"),
-
-(E"Iterable Collections",E"Base",E"countp",E"countp(p, itr)
-
-   Count the number of elements in \"itr\" for which predicate \"p\"
-   is true.
-
-"),
-
-(E"Iterable Collections",E"Base",E"anyp",E"anyp(p, itr)
+(E"Iterable Collections",E"Base",E"any",E"any(p, itr)
 
    Determine whether any element of \"itr\" satisfies the given
    predicate.
 
 "),
 
-(E"Iterable Collections",E"Base",E"allp",E"allp(p, itr)
+(E"Iterable Collections",E"Base",E"all",E"all(p, itr)
 
    Determine whether all elements of \"itr\" satisfy the given
    predicate.
@@ -653,10 +650,9 @@ collection[key...] = value
 
 "),
 
-(E"Associative Collections",E"Base",E"Dict{K,V}",E"Dict{K,V}(n)
+(E"Associative Collections",E"Base",E"Dict{K,V}",E"Dict{K,V}()
 
-   Construct a hashtable with keys of type K and values of type V and
-   intial size of n
+   Construct a hashtable with keys of type K and values of type V
 
 "),
 
@@ -673,13 +669,13 @@ collection[key...] = value
 
 "),
 
-(E"Associative Collections",E"Base",E"del",E"del(collection, key)
+(E"Associative Collections",E"Base",E"delete!",E"delete!(collection, key)
 
    Delete the mapping for the given key in a collection.
 
 "),
 
-(E"Associative Collections",E"Base",E"del_all",E"del_all(collection)
+(E"Associative Collections",E"Base",E"empty!",E"empty!(collection)
 
    Delete all keys from a collection.
 
@@ -697,9 +693,10 @@ collection[key...] = value
 
 "),
 
-(E"Associative Collections",E"Base",E"pairs",E"pairs(collection)
+(E"Associative Collections",E"Base",E"collect",E"collect(collection)
 
-   Return an array of all (key, value) tuples in a collection.
+   Return an array of all items in a collection. For associative
+   collections, returns (key, value) tuples.
 
 "),
 
@@ -729,7 +726,14 @@ collection[key...] = value
 
 "),
 
-(E"Set-Like Collections",E"Base",E"add",E"add(collection, key)
+(E"Associative Collections",E"Base",E"eltype",E"eltype(collection)
+
+   Returns the type tuple of the (key,value) pairs contained in
+   collection.
+
+"),
+
+(E"Set-Like Collections",E"Base",E"add!",E"add!(collection, key)
 
    Add an element to a set-like collection.
 
@@ -813,10 +817,9 @@ collection[key...] = value
 
 "),
 
-(E"Dequeues",E"Base",E"grow!",E"grow!(collection, n)
+(E"Dequeues",E"Base",E"resize!",E"resize!(collection, n)
 
-   Add uninitialized space for \"n\" elements at the end of a
-   collection.
+   Resize collection to contain \"n\" elements.
 
 "),
 
@@ -826,26 +829,19 @@ collection[key...] = value
 
 "),
 
-(E"Strings",E"Base",E"strlen",E"strlen(s)
+(E"Strings",E"Base",E"length",E"length(s)
 
    The number of characters in string \"s\".
 
 "),
 
-(E"Strings",E"Base",E"length",E"length(s)
-
-   The last valid index for string \"s\". Indexes are byte offsets and
-   not character numbers.
-
-"),
-
-(E"Strings",E"Base",E"chars",E"chars(string)
+(E"Strings",E"Base",E"collect",E"collect(string)
 
    Return an array of the characters in \"string\".
 
 "),
 
-(E"Strings",E"Base",E"strcat",E"strcat(strs...)
+(E"Strings",E"Base",E"string",E"string(strs...)
 
    Concatenate strings.
 
@@ -902,7 +898,7 @@ collection[key...] = value
 
 "),
 
-(E"Strings",E"Base",E"strchr",E"strchr(string, char[, i])
+(E"Strings",E"Base",E"search",E"search(string, char[, i])
 
    Return the index of \"char\" in \"string\", giving 0 if not found.
    The second argument may also be a vector or a set of characters.
@@ -1242,7 +1238,7 @@ collection[key...] = value
 
 "),
 
-(E"Text I/O",E"Base",E"dlmread",E"dlmread(filename, delim::Char)
+(E"Text I/O",E"Base",E"readdlm",E"readdlm(filename, delim::Char)
 
    Read a matrix from a text file where each line gives one row, with
    elements separated by the given delimeter. If all data is numeric,
@@ -1251,7 +1247,7 @@ collection[key...] = value
 
 "),
 
-(E"Text I/O",E"Base",E"dlmread",E"dlmread(filename, delim::Char, T::Type)
+(E"Text I/O",E"Base",E"readdlm",E"readdlm(filename, delim::Char, T::Type)
 
    Read a matrix from a text file with a given element type. If \"T\"
    is a numeric type, the result is an array of that type, with any
@@ -1261,22 +1257,22 @@ collection[key...] = value
 
 "),
 
-(E"Text I/O",E"Base",E"dlmwrite",E"dlmwrite(filename, array, delim::Char)
+(E"Text I/O",E"Base",E"writedlm",E"writedlm(filename, array, delim::Char)
 
    Write an array to a text file using the given delimeter (defaults
    to comma).
 
 "),
 
-(E"Text I/O",E"Base",E"csvread",E"csvread(filename[, T::Type])
+(E"Text I/O",E"Base",E"readcsv",E"readcsv(filename[, T::Type])
 
-   Equivalent to \"dlmread\" with \"delim\" set to comma.
+   Equivalent to \"readdlm\" with \"delim\" set to comma.
 
 "),
 
-(E"Text I/O",E"Base",E"csvwrite",E"csvwrite(filename, array)
+(E"Text I/O",E"Base",E"writecsv",E"writecsv(filename, array)
 
-   Equivalent to \"dlmwrite\" with \"delim\" set to comma.
+   Equivalent to \"writedlm\" with \"delim\" set to comma.
 
 "),
 
@@ -1348,15 +1344,15 @@ collection[key...] = value
 
 "),
 
-(E"Mathematical Functions",E"Base",E"div",E"div()
+(E"Mathematical Functions",E"Base",E"div",E"div(a, b)
 
-   Integer truncating division
+   Compute a/b, truncating to an integer
 
 "),
 
-(E"Mathematical Functions",E"Base",E"fld",E"fld()
+(E"Mathematical Functions",E"Base",E"fld",E"fld(a, b)
 
-   Integer floor division
+   Largest integer less than or equal to a/b
 
 "),
 
@@ -1378,6 +1374,12 @@ collection[key...] = value
 
 "),
 
+(E"Mathematical Functions",E"Base",E"den",E"den(x)
+
+   Denominator of the rational representation of \"x\"
+
+"),
+
 (E"Mathematical Functions",E"",E"<< >>",E"<< >>
 
    Left and right shift operators
@@ -1388,6 +1390,13 @@ collection[key...] = value
 
    Comparison operators to test equals, not equals, less than, less
    than or equals, greater than, and greater than or equals
+
+"),
+
+(E"Mathematical Functions",E"Base",E"cmp",E"cmp(x, y)
+
+   Return -1, 0, or 1 depending on whether \"x<y\", \"x==y\", or
+   \"x>y\", respectively
 
 "),
 
@@ -1423,55 +1432,74 @@ collection[key...] = value
 
 (E"Mathematical Functions",E"Base",E"sin",E"sin(x)
 
-   Compute sine of \"x\"
+   Compute sine of \"x\", where \"x\" is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"cos",E"cos(x)
 
-   Compute cosine of \"x\"
+   Compute cosine of \"x\", where \"x\" is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"tan",E"tan(x)
 
-   Compute tangent of \"x\"
+   Compute tangent of \"x\", where \"x\" is in radians
+
+"),
+
+(E"Mathematical Functions",E"Base",E"sind",E"sind(x)
+
+   Compute sine of \"x\", where \"x\" is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"cosd",E"cosd(x)
+
+   Compute cosine of \"x\", where \"x\" is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"tand",E"tand(x)
+
+   Compute tangent of \"x\", where \"x\" is in degrees
 
 "),
 
 (E"Mathematical Functions",E"Base",E"sinh",E"sinh(x)
 
-   Compute hyperbolic sine of \"x\" specified in radians
+   Compute hyperbolic sine of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"cosh",E"cosh(x)
 
-   Compute hyperbolic cosine of \"x\" specified in radians
+   Compute hyperbolic cosine of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"tanh",E"tanh(x)
 
-   Compute hyperbolic tangent of \"x\" specified in radians
+   Compute hyperbolic tangent of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"asin",E"asin(x)
 
-   Compute the inverse sine of \"x\" specified in radians
+   Compute the inverse sine of \"x\", where the output is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acos",E"acos(x)
 
-   Compute the inverse cosine of \"x\" specified in radians
+   Compute the inverse cosine of \"x\", where the output is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"atan",E"atan(x)
 
-   Compute the inverse tangent of \"x\" specified in radians
+   Compute the inverse tangent of \"x\", where the output is in
+   radians
 
 "),
 
@@ -1482,96 +1510,152 @@ collection[key...] = value
 
 "),
 
+(E"Mathematical Functions",E"Base",E"asind",E"asind(x)
+
+   Compute the inverse sine of \"x\", where the output is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"acosd",E"acosd(x)
+
+   Compute the inverse cosine of \"x\", where the output is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"atand",E"atand(x)
+
+   Compute the inverse tangent of \"x\", where the output is in
+   degrees
+
+"),
+
 (E"Mathematical Functions",E"Base",E"sec",E"sec(x)
 
-   Compute the secant of \"x\" specified in radians
+   Compute the secant of \"x\", where \"x\" is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"csc",E"csc(x)
 
-   Compute the cosecant of \"x\" specified in radians
+   Compute the cosecant of \"x\", where \"x\" is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"cot",E"cot(x)
 
-   Compute the cotangent of \"x\" specified in radians
+   Compute the cotangent of \"x\", where \"x\" is in radians
+
+"),
+
+(E"Mathematical Functions",E"Base",E"secd",E"secd(x)
+
+   Compute the secant of \"x\", where \"x\" is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"cscd",E"cscd(x)
+
+   Compute the cosecant of \"x\", where \"x\" is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"cotd",E"cotd(x)
+
+   Compute the cotangent of \"x\", where \"x\" is in degrees
 
 "),
 
 (E"Mathematical Functions",E"Base",E"asec",E"asec(x)
 
-   Compute the inverse secant of \"x\" specified in radians
+   Compute the inverse secant of \"x\", where the output is in radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acsc",E"acsc(x)
 
-   Compute the inverse cosecant of \"x\" specified in radians
+   Compute the inverse cosecant of \"x\", where the output is in
+   radians
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acot",E"acot(x)
 
-   Compute the inverse cotangent of \"x\" specified in radians
+   Compute the inverse cotangent of \"x\", where the output is in
+   radians
+
+"),
+
+(E"Mathematical Functions",E"Base",E"asecd",E"asecd(x)
+
+   Compute the inverse secant of \"x\", where the output is in degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"acscd",E"acscd(x)
+
+   Compute the inverse cosecant of \"x\", where the output is in
+   degrees
+
+"),
+
+(E"Mathematical Functions",E"Base",E"acotd",E"acotd(x)
+
+   Compute the inverse cotangent of \"x\", where the output is in
+   degrees
 
 "),
 
 (E"Mathematical Functions",E"Base",E"sech",E"sech(x)
 
-   Compute the hyperbolic secant of \"x\" specified in radians
+   Compute the hyperbolic secant of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"csch",E"csch(x)
 
-   Compute the hyperbolic cosecant of \"x\" specified in radians
+   Compute the hyperbolic cosecant of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"coth",E"coth(x)
 
-   Compute the hyperbolic cotangent of \"x\" specified in radians
+   Compute the hyperbolic cotangent of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"asinh",E"asinh(x)
 
-   Compute the inverse hyperbolic sine of \"x\" specified in radians
+   Compute the inverse hyperbolic sine of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acosh",E"acosh(x)
 
-   Compute the inverse hyperbolic cosine of \"x\" specified in radians
+   Compute the inverse hyperbolic cosine of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"atanh",E"atanh(x)
 
-   Compute the inverse hyperbolic cotangent of \"x\" specified in
-   radians
+   Compute the inverse hyperbolic cotangent of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"asech",E"asech(x)
 
-   Compute the inverse hyperbolic secant of \"x\" specified in radians
+   Compute the inverse hyperbolic secant of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acsch",E"acsch(x)
 
-   Compute the inverse hyperbolic cosecant of \"x\" specified in
-   radians
+   Compute the inverse hyperbolic cosecant of \"x\"
 
 "),
 
 (E"Mathematical Functions",E"Base",E"acoth",E"acoth(x)
 
-   Compute the inverse hyperbolic cotangent of \"x\" specified in
-   radians
+   Compute the inverse hyperbolic cotangent of \"x\"
 
 "),
 
@@ -1584,6 +1668,12 @@ collection[key...] = value
 (E"Mathematical Functions",E"Base",E"cosc",E"cosc(x)
 
    Compute cos(\\pi x) / x
+
+"),
+
+(E"Mathematical Functions",E"Base",E"degrees2radians",E"degrees2radians(x)
+
+   Convert \"x\" from degrees to radians
 
 "),
 
@@ -1926,13 +2016,26 @@ collection[key...] = value
 
 (E"Mathematical Functions",E"Base",E"gamma",E"gamma(x)
 
+   Compute the gamma function of \"x\"
+
 "),
 
 (E"Mathematical Functions",E"Base",E"lgamma",E"lgamma(x)
 
+   Compute the logarithm of \"gamma(x)\"
+
 "),
 
 (E"Mathematical Functions",E"Base",E"lfact",E"lfact(x)
+
+   Compute the logarithmic factorial of \"x\"
+
+"),
+
+(E"Mathematical Functions",E"Base",E"digamma",E"digamma(x)
+
+   Compute the digamma function of \"x\" (the logarithmic derivative
+   of \"gamma(x)\")
 
 "),
 
@@ -2159,6 +2262,24 @@ airyaiprime(x)
 
 "),
 
+(E"Data Formats",E"Base",E"complex64",E"complex64(r, i)
+
+   Convert to \"r+i*im\" represented as a \"Complex64\" data type
+
+"),
+
+(E"Data Formats",E"Base",E"complex128",E"complex128(r, i)
+
+   Convert to \"r+i*im\" represented as a \"Complex128\" data type
+
+"),
+
+(E"Data Formats",E"Base",E"float64",E"float64(x)
+
+   Convert a number or array to \"Float64\" data type
+
+"),
+
 (E"Data Formats",E"Base",E"char",E"char(x)
 
    Convert a number or array to \"Char\" data type
@@ -2302,6 +2423,54 @@ airyaiprime(x)
 
 "),
 
+(E"Numbers",E"Base",E"count_ones",E"count_ones(x::Integer) -> Integer
+
+   Number of ones in the binary representation of \"x\".
+
+   **Example**: \"count_ones(7) -> 3\"
+
+"),
+
+(E"Numbers",E"Base",E"count_zeros",E"count_zeros(x::Integer) -> Integer
+
+   Number of zeros in the binary representation of \"x\".
+
+   **Example**: \"count_zeros(int32(2 ^ 16 - 1)) -> 16\"
+
+"),
+
+(E"Numbers",E"Base",E"leading_zeros",E"leading_zeros(x::Integer) -> Integer
+
+   Number of zeros leading the binary representation of \"x\".
+
+   **Example**: \"leading_zeros(int32(1)) -> 31\"
+
+"),
+
+(E"Numbers",E"Base",E"leading_ones",E"leading_ones(x::Integer) -> Integer
+
+   Number of ones leading the binary representation of \"x\".
+
+   **Example**: \"leading_ones(int32(2 ^ 32 - 2)) -> 31\"
+
+"),
+
+(E"Numbers",E"Base",E"trailing_zeros",E"trailing_zeros(x::Integer) -> Integer
+
+   Number of zeros trailing the binary representation of \"x\".
+
+   **Example**: \"trailing_zeros(2) -> 1\"
+
+"),
+
+(E"Numbers",E"Base",E"trailing_ones",E"trailing_ones(x::Integer) -> Integer
+
+   Number of ones trailing the binary representation of \"x\".
+
+   **Example**: \"trailing_ones(3) -> 2\"
+
+"),
+
 (E"Random Numbers",E"Base",E"srand",E"srand([rng], seed)
 
    Seed the RNG with a \"seed\", which may be an unsigned integer or a
@@ -2398,12 +2567,6 @@ airyaiprime(x)
 (E"Arrays",E"Base",E"eltype",E"eltype(A)
 
    Returns the type of the elements contained in A
-
-"),
-
-(E"Arrays",E"Base",E"numel",E"numel(A)
-
-   Returns the number of elements in A
 
 "),
 
@@ -2671,7 +2834,7 @@ airyaiprime(x)
 
 "),
 
-(E"Arrays",E"Base",E"permute",E"permute(A, perm)
+(E"Arrays",E"Base",E"permutedims",E"permutedims(A, perm)
 
    Permute the dimensions of array \"A\". \"perm\" is a vector
    specifying a permutation of length \"ndims(A)\". This is a
@@ -2680,23 +2843,22 @@ airyaiprime(x)
 
 "),
 
-(E"Arrays",E"Base",E"ipermute",E"ipermute(A, perm)
+(E"Arrays",E"Base",E"ipermutedims",E"ipermutedims(A, perm)
 
-   Like \"permute\", except the inverse of the given permutation is
-   applied.
+   Like \"permutedims\", except the inverse of the given permutation
+   is applied.
 
 "),
 
-(E"Arrays",E"Base",E"squeeze",E"squeeze(A)
+(E"Arrays",E"Base",E"squeeze",E"squeeze(A, dims)
 
-   Remove singleton dimensions from the shape of array \"A\"
+   Remove the dimensions specified by \"dims\" from array \"A\"
 
 "),
 
 (E"Arrays",E"Base",E"vec",E"vec(A)
 
-   Make a vector out of an array with only one non-singleton
-   dimension.
+   Vectorize an array using column-major convention.
 
 "),
 
@@ -3068,6 +3230,22 @@ airyaiprime(x)
 
 "),
 
+(E"Combinatorics",E"Base",E"permute!",E"permute!(v, p)
+
+   Permute vector \"v\" in-place, according to permutation \"p\".  No
+   checking is done to verify that \"p\" is a permutation.
+
+   To return a new permutation, use \"v[p]\".  Note that this is
+   generally faster than \"permute!(v,p)\" for large vectors.
+
+"),
+
+(E"Combinatorics",E"Base",E"ipermute!",E"ipermute!(v, p)
+
+   Like permute!, but the inverse of the given permutation is applied.
+
+"),
+
 (E"Combinatorics",E"Base",E"randcycle",E"randcycle(n)
 
    Construct a random cyclic permutation of the given length
@@ -3188,7 +3366,7 @@ airyaiprime(x)
 
 "),
 
-(E"Statistics",E"Base",E"histc",E"histc(v, e)
+(E"Statistics",E"Base",E"hist",E"hist(v, e)
 
    Compute the histogram of \"v\" using a vector \"e\" as the edges
    for the bins
@@ -3898,9 +4076,9 @@ airyaiprime(x)
 
 "),
 
-(E"System",E"Base",E"system",E"system(\"command\")
+(E"System",E"Base",E"run",E"run(command)
 
-   Run a shell command.
+   Run a command object, constructed with backticks.
 
 "),
 
@@ -5895,26 +6073,6 @@ eval_tab_col(glp_prob, k)
 
 "),
 
-(E"Base.Sort",E"Base.Sort",E"sortr",E"sortr(v[, dim])
-
-   Sort a vector in descending order. If \"dim\" is provided, sort
-   along the given dimension.
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortr",E"sortr(alg, ...)
-
-   Sort in descending order with a specific sorting algorithm
-   (InsertionSort, QuickSort, MergeSort, or TimSort).
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortr!",E"sortr!(...)
-
-   In-place \"sortr\".
-
-"),
-
 (E"Base.Sort",E"Base.Sort",E"sortby",E"sortby(by, v[, dim])
 
    Sort a vector according to \"by(v)\".   If \"dim\" is provided,
@@ -5935,71 +6093,31 @@ eval_tab_col(glp_prob, k)
 
 "),
 
-(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(v) -> s,p
+(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(v)
 
-   Sort a vector in ascending order, also constructing the permutation
-   that sorts the vector.
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(lessthan, v) -> s,p
-
-   Sort a vector with a custom comparison function, also constructing
-   the permutation that sorts the vector.
+   Return a permutation vector, which when applied to the input vector
+   \"v\" will sort it.
 
 "),
 
-(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(alg, ...) -> s,p
+(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(lessthan, v)
+
+   Return a permutation vector, which when applied to the input vector
+   \"v\" will sort it, using the specified \"lessthan\" comparison
+   function.
+
+"),
+
+(E"Base.Sort",E"Base.Sort",E"sortperm",E"sortperm(alg, ...)
 
    \"sortperm\" using a specific sorting algorithm (\"InsertionSort\",
    \"QuickSort\", \"MergeSort\", or \"TimSort\").
 
 "),
 
-(E"Base.Sort",E"Base.Sort",E"sortperm!",E"sortperm!(...) -> s,p
+(E"Base.Sort",E"Base.Sort",E"sortperm!",E"sortperm!(...)
 
    In-place \"sortperm\".
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermr",E"sortpermr(v) -> s,p
-
-   Sort a vector in descending order, also constructing the
-   permutation that sorts the vector!
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermr",E"sortpermr(alg, ...) -> s,p
-
-   \"sortpermr\" using a specific sorting algorithm
-   (\"InsertionSort\", \"QuickSort\", \"MergeSort\", or \"TimSort\").
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermr!",E"sortpermr!(v) -> s,p
-
-   In-place \"sortpermr\".
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermby",E"sortpermby(by, v) -> s,p
-
-   Sort a vector according to the result of function \"by\" applied to
-   all values, also constructing the permutation that sorts the
-   vector.
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermby",E"sortpermby(alg, ...) -> s,p
-
-   \"sortpermby\" using a specific sorting algorithm
-   (\"InsertionSort\", \"QuickSort\", \"MergeSort\", or \"TimSort\").
-
-"),
-
-(E"Base.Sort",E"Base.Sort",E"sortpermby!",E"sortpermby!(...) -> s,p
-
-   In-place \"sortpermby\".
 
 "),
 

@@ -20,7 +20,7 @@ Getting Around
 
    Edit the definition of a function, optionally specifying a tuple of types to indicate which method to edit. When the editor exits, the source file containing the definition is reloaded.
 
-.. function:: load("file")
+.. function:: require("file")
 
    Evaluate the contents of a source file
 
@@ -189,6 +189,13 @@ The ``state`` object may be anything, and should be chosen appropriately for eac
 
    For a given iterable object and iteration state, return the current item and the next iteration state
 
+.. function:: zip(iters...)
+
+   For a set of iterable objects, returns an iterable of tuples, where the ``i``th tuple contains the ``i``th component of each input iterable.
+
+   Note that ``zip`` is it's own inverse: [zip(zip(a...)...)...] == [a...]
+
+
 Fully implemented by: ``Range``, ``Range1``, ``NDRange``, ``Tuple``, ``Real``, ``AbstractArray``, ``IntSet``, ``ObjectIdDict``, ``Dict``, ``WeakKeyDict``, ``EachLine``, ``String``, ``Set``, ``Task``.
 
 General Collections
@@ -261,19 +268,11 @@ Iterable Collections
 
    Test whether all elements of a boolean collection are true
 
-.. function:: count(itr)
-
-   Count the number of boolean elements in ``itr`` which are ``true`` rather than ``false``.
-
-.. function:: countp(p, itr)
-
-   Count the number of elements in ``itr`` for which predicate ``p`` is true.
-
-.. function:: anyp(p, itr)
+.. function:: any(p, itr)
 
    Determine whether any element of ``itr`` satisfies the given predicate.
 
-.. function:: allp(p, itr)
+.. function:: all(p, itr)
 
    Determine whether all elements of ``itr`` satisfy the given predicate.
 
@@ -310,9 +309,9 @@ Dicts can be created using a literal syntax: ``{"A"=>1, "B"=>2}``. Use of curly 
 As with arrays, ``Dicts`` may be created with comprehensions. For example,
 ``{i => f(i) for i = 1:10}``.
 
-.. function:: Dict{K,V}(n)
+.. function:: Dict{K,V}()
 
-   Construct a hashtable with keys of type K and values of type V and intial size of n
+   Construct a hashtable with keys of type K and values of type V
 
 .. function:: has(collection, key)
 
@@ -322,11 +321,11 @@ As with arrays, ``Dicts`` may be created with comprehensions. For example,
 
    Return the value stored for the given key, or the given default value if no mapping for the key is present.
 
-.. function:: del(collection, key)
+.. function:: delete!(collection, key)
 
    Delete the mapping for the given key in a collection.
 
-.. function:: del_all(collection)
+.. function:: empty!(collection)
 
    Delete all keys from a collection.
 
@@ -338,9 +337,9 @@ As with arrays, ``Dicts`` may be created with comprehensions. For example,
 
    Return an array of all values in a collection.
 
-.. function:: pairs(collection)
+.. function:: collect(collection)
 
-   Return an array of all (key, value) tuples in a collection.
+   Return an array of all items in a collection. For associative collections, returns (key, value) tuples.
 
 .. function:: merge(collection, others...)
 
@@ -358,6 +357,10 @@ As with arrays, ``Dicts`` may be created with comprehensions. For example,
 
    Update collection, removing (key, value) pairs for which function is false.
 
+.. function:: eltype(collection)
+
+   Returns the type tuple of the (key,value) pairs contained in collection.
+
 Fully implemented by: ``ObjectIdDict``, ``Dict``, ``WeakKeyDict``.
 
 Partially implemented by: ``IntSet``, ``Set``, ``EnvHash``, ``FDSet``, ``Array``.
@@ -365,7 +368,7 @@ Partially implemented by: ``IntSet``, ``Set``, ``EnvHash``, ``FDSet``, ``Array``
 Set-Like Collections
 --------------------
 
-.. function:: add(collection, key)
+.. function:: add!(collection, key)
 
    Add an element to a set-like collection.
 
@@ -424,9 +427,9 @@ Dequeues
 
    Remove the item at the given index.
 
-.. function:: grow!(collection, n)
+.. function:: resize!(collection, n)
 
-   Add uninitialized space for ``n`` elements at the end of a collection.
+   Resize collection to contain ``n`` elements.
 
 .. function:: append!(collection, items)
 
@@ -437,19 +440,15 @@ Fully implemented by: ``Vector`` (aka 1-d ``Array``).
 Strings
 -------
 
-.. function:: strlen(s)
+.. function:: length(s)
 
    The number of characters in string ``s``.
 
-.. function:: length(s)
-
-   The last valid index for string ``s``. Indexes are byte offsets and not character numbers.
-
-.. function:: chars(string)
+.. function:: collect(string)
 
    Return an array of the characters in ``string``.
 
-.. function:: strcat(strs...)
+.. function:: string(strs...)
 
    Concatenate strings.
 
@@ -485,7 +484,7 @@ Strings
 
    Convert a string to a contiguous UTF-8 string (all characters must be valid UTF-8 characters).
 
-.. function:: strchr(string, char, [i])
+.. function:: search(string, char, [i])
 
    Return the index of ``char`` in ``string``, giving 0 if not found. The second argument may also be a vector or a set of characters. The third argument optionally specifies a starting index.
 
@@ -685,25 +684,25 @@ Text I/O
 
    Create an iterable object that will yield each line from a stream.
 
-.. function:: dlmread(filename, delim::Char)
+.. function:: readdlm(filename, delim::Char)
 
    Read a matrix from a text file where each line gives one row, with elements separated by the given delimeter. If all data is numeric, the result will be a numeric array. If some elements cannot be parsed as numbers, a cell array of numbers and strings is returned.
 
-.. function:: dlmread(filename, delim::Char, T::Type)
+.. function:: readdlm(filename, delim::Char, T::Type)
 
    Read a matrix from a text file with a given element type. If ``T`` is a numeric type, the result is an array of that type, with any non-numeric elements as ``NaN`` for floating-point types, or zero. Other useful values of ``T`` include ``ASCIIString``, ``String``, and ``Any``.
 
-.. function:: dlmwrite(filename, array, delim::Char)
+.. function:: writedlm(filename, array, delim::Char)
 
    Write an array to a text file using the given delimeter (defaults to comma).
 
-.. function:: csvread(filename, [T::Type])
+.. function:: readcsv(filename, [T::Type])
 
-   Equivalent to ``dlmread`` with ``delim`` set to comma.
+   Equivalent to ``readdlm`` with ``delim`` set to comma.
 
-.. function:: csvwrite(filename, array)
+.. function:: writecsv(filename, array)
 
-   Equivalent to ``dlmwrite`` with ``delim`` set to comma.
+   Equivalent to ``writedlm`` with ``delim`` set to comma.
 
 Memory-mapped I/O
 -----------------
@@ -752,15 +751,15 @@ Mathematical Functions
 
    The element-wise binary addition, subtraction, multiplication, left division, right division, and exponentiation operators
 
-.. function:: div
+.. function:: div(a,b)
 
-   Integer truncating division
+   Compute a/b, truncating to an integer
 
-.. function:: fld
+.. function:: fld(a,b)
 
-   Integer floor division
+   Largest integer less than or equal to a/b
 
-.. function:: mod 
+.. function:: mod
 
    Modulus after division
 
@@ -772,6 +771,10 @@ Mathematical Functions
 
    Rational division
 
+.. function:: den(x)
+
+   Denominator of the rational representation of ``x``
+
 .. function:: << >>
 
    Left and right shift operators
@@ -779,6 +782,10 @@ Mathematical Functions
 .. function:: == != < <= > >=
 
    Comparison operators to test equals, not equals, less than, less than or equals, greater than, and greater than or equals
+
+.. function:: cmp(x,y)
+
+   Return -1, 0, or 1 depending on whether ``x<y``, ``x==y``, or ``x>y``, respectively
 
 .. function:: !
 
@@ -802,103 +809,151 @@ Mathematical Functions
 
 .. function:: sin(x)
 
-   Compute sine of ``x``
+   Compute sine of ``x``, where ``x`` is in radians
 
 .. function:: cos(x)
 
-   Compute cosine of ``x``
+   Compute cosine of ``x``, where ``x`` is in radians
 
 .. function:: tan(x)
 
-   Compute tangent of ``x``
+   Compute tangent of ``x``, where ``x`` is in radians
+
+.. function:: sind(x)
+
+   Compute sine of ``x``, where ``x`` is in degrees
+
+.. function:: cosd(x)
+
+   Compute cosine of ``x``, where ``x`` is in degrees
+
+.. function:: tand(x)
+
+   Compute tangent of ``x``, where ``x`` is in degrees
 
 .. function:: sinh(x)
 
-   Compute hyperbolic sine of ``x`` specified in radians
+   Compute hyperbolic sine of ``x``
 
 .. function:: cosh(x)
 
-   Compute hyperbolic cosine of ``x`` specified in radians
+   Compute hyperbolic cosine of ``x``
 
 .. function:: tanh(x)
 
-   Compute hyperbolic tangent of ``x`` specified in radians
+   Compute hyperbolic tangent of ``x``
 
 .. function:: asin(x)
 
-   Compute the inverse sine of ``x`` specified in radians
+   Compute the inverse sine of ``x``, where the output is in radians
 
 .. function:: acos(x)
 
-   Compute the inverse cosine of ``x`` specified in radians
+   Compute the inverse cosine of ``x``, where the output is in radians
 
 .. function:: atan(x)
 
-   Compute the inverse tangent of ``x`` specified in radians
+   Compute the inverse tangent of ``x``, where the output is in radians
 
 .. function:: atan2(y, x)
 
    Compute the inverse tangent of ``y/x``, using the signs of both ``x`` and ``y`` to determine the quadrant of the return value.
 
+.. function:: asind(x)
+
+   Compute the inverse sine of ``x``, where the output is in degrees
+
+.. function:: acosd(x)
+
+   Compute the inverse cosine of ``x``, where the output is in degrees
+
+.. function:: atand(x)
+
+   Compute the inverse tangent of ``x``, where the output is in degrees
+
 .. function:: sec(x)
 
-   Compute the secant of ``x`` specified in radians
+   Compute the secant of ``x``, where ``x`` is in radians
 
 .. function:: csc(x)
 
-   Compute the cosecant of ``x`` specified in radians
+   Compute the cosecant of ``x``, where ``x`` is in radians
 
 .. function:: cot(x)
 
-   Compute the cotangent of ``x`` specified in radians
+   Compute the cotangent of ``x``, where ``x`` is in radians
+
+.. function:: secd(x)
+
+   Compute the secant of ``x``, where ``x`` is in degrees
+
+.. function:: cscd(x)
+
+   Compute the cosecant of ``x``, where ``x`` is in degrees
+
+.. function:: cotd(x)
+
+   Compute the cotangent of ``x``, where ``x`` is in degrees
 
 .. function:: asec(x)
 
-   Compute the inverse secant of ``x`` specified in radians
+   Compute the inverse secant of ``x``, where the output is in radians
 
 .. function:: acsc(x)
 
-   Compute the inverse cosecant of ``x`` specified in radians
+   Compute the inverse cosecant of ``x``, where the output is in radians
 
 .. function:: acot(x)
 
-   Compute the inverse cotangent of ``x`` specified in radians
+   Compute the inverse cotangent of ``x``, where the output is in radians
+
+.. function:: asecd(x)
+
+   Compute the inverse secant of ``x``, where the output is in degrees
+
+.. function:: acscd(x)
+
+   Compute the inverse cosecant of ``x``, where the output is in degrees
+
+.. function:: acotd(x)
+
+   Compute the inverse cotangent of ``x``, where the output is in degrees
 
 .. function:: sech(x)
 
-   Compute the hyperbolic secant of ``x`` specified in radians
+   Compute the hyperbolic secant of ``x``
 
 .. function:: csch(x)
 
-   Compute the hyperbolic cosecant of ``x`` specified in radians
+   Compute the hyperbolic cosecant of ``x``
 
 .. function:: coth(x)
 
-   Compute the hyperbolic cotangent of ``x`` specified in radians
+   Compute the hyperbolic cotangent of ``x``
 
 .. function:: asinh(x)
 
-   Compute the inverse hyperbolic sine of ``x`` specified in radians
+   Compute the inverse hyperbolic sine of ``x``
 
 .. function:: acosh(x)
 
-   Compute the inverse hyperbolic cosine of ``x`` specified in radians
+   Compute the inverse hyperbolic cosine of ``x``
 
 .. function:: atanh(x)
 
-   Compute the inverse hyperbolic cotangent of ``x`` specified in radians
+   Compute the inverse hyperbolic cotangent of ``x``
 
 .. function:: asech(x)
 
-   Compute the inverse hyperbolic secant of ``x`` specified in radians
+   Compute the inverse hyperbolic secant of ``x``
 
 .. function:: acsch(x)
 
-   Compute the inverse hyperbolic cosecant of ``x`` specified in radians
+   Compute the inverse hyperbolic cosecant of ``x``
 
 .. function:: acoth(x)
 
-   Compute the inverse hyperbolic cotangent of ``x`` specified in radians
+   Compute the inverse hyperbolic cotangent of ``x``
 
 .. function:: sinc(x)
 
@@ -907,6 +962,10 @@ Mathematical Functions
 .. function:: cosc(x)
 
    Compute :math:`cos(\pi x) / x`
+
+.. function:: degrees2radians(x)
+
+   Convert ``x`` from degrees to radians
 
 .. function:: hypot(x, y)
 
@@ -1126,8 +1185,20 @@ Mathematical Functions
    Compute ``mod(x^p, m)``
 
 .. function:: gamma(x)
+
+   Compute the gamma function of ``x``
+
 .. function:: lgamma(x)
+
+   Compute the logarithm of ``gamma(x)``
+
 .. function:: lfact(x)
+
+   Compute the logarithmic factorial of ``x``
+
+.. function:: digamma(x)
+
+   Compute the digamma function of ``x`` (the logarithmic derivative of ``gamma(x)``)
 
 .. function:: airy(x)
               airyai(x)
@@ -1275,6 +1346,18 @@ Data Formats
 
    Convert a number or array to ``Float64`` data type
 
+.. function:: complex64(r,i)
+
+   Convert to ``r+i*im`` represented as a ``Complex64`` data type
+
+.. function:: complex128(r,i)
+
+   Convert to ``r+i*im`` represented as a ``Complex128`` data type
+
+.. function:: float64(x)
+
+   Convert a number or array to ``Float64`` data type
+
 .. function:: char(x)
 
    Convert a number or array to ``Char`` data type
@@ -1368,6 +1451,46 @@ Numbers
    Create an arbitrary precision floating point number. ``x`` may be an ``Integer``, a ``Float64``, a ``String`` or a ``BigInt``. The 
    usual mathematical operators are defined for this type, and results are promoted to a ``BigFloat``.
 
+Integers
+~~~~~~~~
+
+.. function:: count_ones(x::Integer) -> Integer
+
+   Number of ones in the binary representation of ``x``.
+   
+   **Example**: ``count_ones(7) -> 3``
+
+.. function:: count_zeros(x::Integer) -> Integer
+
+   Number of zeros in the binary representation of ``x``.
+   
+   **Example**: ``count_zeros(int32(2 ^ 16 - 1)) -> 16``
+
+.. function:: leading_zeros(x::Integer) -> Integer
+
+   Number of zeros leading the binary representation of ``x``.
+   
+   **Example**: ``leading_zeros(int32(1)) -> 31``
+
+.. function:: leading_ones(x::Integer) -> Integer
+
+   Number of ones leading the binary representation of ``x``.
+   
+   **Example**: ``leading_ones(int32(2 ^ 32 - 2)) -> 31``
+
+.. function:: trailing_zeros(x::Integer) -> Integer
+
+   Number of zeros trailing the binary representation of ``x``.
+   
+   **Example**: ``trailing_zeros(2) -> 1``
+
+.. function:: trailing_ones(x::Integer) -> Integer
+
+   Number of ones trailing the binary representation of ``x``.
+   
+   **Example**: ``trailing_ones(3) -> 2``
+
+
 Random Numbers
 --------------
 
@@ -1434,10 +1557,6 @@ Basic functions
 .. function:: eltype(A)
 
    Returns the type of the elements contained in A
-
-.. function:: numel(A)
-
-   Returns the number of elements in A
 
 .. function:: length(A)
 
@@ -1609,21 +1728,21 @@ Indexing, Assignment, and Concatenation
 
    Return a vector of indexes for each dimension giving the locations of the non-zeros in ``A``.
 
-.. function:: permute(A,perm)
+.. function:: permutedims(A,perm)
 
    Permute the dimensions of array ``A``. ``perm`` is a vector specifying a permutation of length ``ndims(A)``. This is a generalization of transpose for multi-dimensional arrays. Transpose is equivalent to ``permute(A,[2,1])``.
 
-.. function:: ipermute(A,perm)
+.. function:: ipermutedims(A,perm)
 
-   Like ``permute``, except the inverse of the given permutation is applied.
+   Like ``permutedims``, except the inverse of the given permutation is applied.
 
-.. function:: squeeze(A)
+.. function:: squeeze(A, dims)
 
-   Remove singleton dimensions from the shape of array ``A``
+   Remove the dimensions specified by ``dims`` from array ``A``
 
 .. function:: vec(A)
 
-   Make a vector out of an array with only one non-singleton dimension.
+   Vectorize an array using column-major convention.
 
 Sparse Matrices
 ---------------
@@ -1855,6 +1974,18 @@ Combinatorics
 
    Returns true if v is a valid permutation
 
+.. function:: permute!(v, p)
+
+   Permute vector ``v`` in-place, according to permutation ``p``.  No
+   checking is done to verify that ``p`` is a permutation.
+
+   To return a new permutation, use ``v[p]``.  Note that this is
+   generally faster than ``permute!(v,p)`` for large vectors.
+
+.. function:: ipermute!(v, p)
+
+   Like permute!, but the inverse of the given permutation is applied.
+
 .. function:: randcycle(n)
 
    Construct a random cyclic permutation of the given length
@@ -1906,7 +2037,7 @@ Statistics
 
    Compute the histogram of ``v``, optionally using ``n`` bins
 
-.. function:: histc(v, e)
+.. function:: hist(v, e)
 
    Compute the histogram of ``v`` using a vector ``e`` as the edges for the bins
 
@@ -2382,9 +2513,9 @@ Distributed Arrays
 System
 ------
 
-.. function:: system("command")
+.. function:: run(command)
 
-   Run a shell command.
+   Run a command object, constructed with backticks.
 
 .. function:: gethostname()
 

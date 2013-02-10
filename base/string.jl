@@ -277,7 +277,7 @@ strwidth(s::ByteString) = ccall(:u8_strwidth, Int, (Ptr{Uint8},), s.data)
 isascii(c::Char) = c < 0x80
 
 for name = ("alnum", "alpha", "blank", "cntrl", "digit", "graph",
-            "lower", "print", "punct", "space", "upper", "xdigit")
+            "lower", "print", "punct", "space", "upper")
     f = symbol(string("is",name))
     @eval ($f)(c::Char) = bool(ccall($(string("isw",name)), Int32, (Char,), c))
 end
@@ -320,7 +320,7 @@ SubString(s::SubString, i::Int, j::Int) = SubString(s.string, s.offset+i, s.offs
 SubString(s::String, i::Integer, j::Integer) = SubString(s, int(i), int(j))
 SubString(s::String, i::Integer) = SubString(s, i, endof(s))
 
-write{T<:ByteString}(to::IOString, s::SubString{T}) = write_sub(to, s.string.data, s.offset+1, s.endof)
+write{T<:ByteString}(to::IOBuffer, s::SubString{T}) = write_sub(to, s.string.data, s.offset+1, s.endof)
 
 function next(s::SubString, i::Int)
     if i < 1 || i > s.endof
@@ -491,8 +491,8 @@ end
 escape_nul(s::String, i::Int) =
     !done(s,i) && '0' <= next(s,i)[1] <= '7' ? L"\x00" : L"\0"
 
-is_hex_digit(c::Char) = '0'<=c<='9' || 'a'<=c<='f' || 'A'<=c<='F'
-need_full_hex(s::String, i::Int) = !done(s,i) && is_hex_digit(next(s,i)[1])
+isxdigit(c::Char) = '0'<=c<='9' || 'a'<=c<='f' || 'A'<=c<='F'
+need_full_hex(s::String, i::Int) = !done(s,i) && isxdigit(next(s,i)[1])
 
 function print_escaped(io, s::String, esc::String)
     i = start(s)
@@ -621,7 +621,7 @@ function interp_parse(s::String, unescape::Function, printer::Function)
             if !isempty(s[i:j-1])
                 push!(sx, unescape(s[i:j-1]))
             end
-            ex, j = parseatom(s,k)
+            ex, j = parse(s,k,false)
             if isa(ex,Expr) && is(ex.head,:continue)
                 throw(ParseError("incomplete expression"))
             end
@@ -657,7 +657,6 @@ end
 ## core string macros ##
 
 macro   str(s); interp_parse(s); end
-macro S_str(s); interp_parse(s); end
 macro I_str(s); interp_parse(s, x->unescape_chars(x,"\"")); end
 macro E_str(s); check_utf8(unescape_string(s)); end
 macro B_str(s); interp_parse_bytes(s); end
@@ -709,7 +708,7 @@ function shell_parse(raw::String, interp::Bool)
             if isspace(s[k])
                 error("space not allowed right after \$")
             end
-            ex, j = parseatom(s,j)
+            ex, j = parse(s,j,false)
             update_arg(esc(ex)); i = j
         else
             if !in_double_quotes && c == '\''
@@ -810,22 +809,24 @@ shell_escape(cmd::String, args::String...) =
 
 ## interface to parser ##
 
-function parse(s::String, pos, greedy)
+function parse(str::String, pos::Int, greedy::Bool)
     # returns (expr, end_pos). expr is () in case of parse error.
     ex, pos = ccall(:jl_parse_string, Any,
                     (Ptr{Uint8}, Int32, Int32),
-                    s, pos-1, greedy ? 1:0)
+                    str, pos-1, greedy ? 1:0)
     if isa(ex,Expr) && is(ex.head,:error)
         throw(ParseError(ex.args[1]))
     end
     if ex == (); throw(ParseError("end of input")); end
     ex, pos+1 # C is zero-based, Julia is 1-based
 end
+parse(str::String, pos::Int) = parse(str, pos, true)
 
-parse(s::String)          = parse(s, 1, true)
-parse(s::String, pos)     = parse(s, pos, true)
-parseatom(s::String)      = parse(s, 1, false)
-parseatom(s::String, pos) = parse(s, pos, false)
+function parse(str::String)
+    ex, pos = parse(str, start(str))
+    done(str, pos) || error("syntax: extra token after end of expression")
+    return ex
+end
 
 ## miscellaneous string functions ##
 
@@ -898,7 +899,7 @@ function replace(str::ByteString, pattern, repl::Function, limit::Integer)
     i = a = start(str)
     r = search(str,pattern,i)
     j, k = first(r), last(r)+1
-    out = IOString()
+    out = IOBuffer()
     while j != 0
         if i == a || i < k
             write(out, SubString(str,i,j-1))
@@ -917,25 +918,6 @@ end
 replace(s::String, pat, f::Function, n::Integer) = replace(bytestring(s), pat, f, n)
 replace(s::String, pat, r, n::Integer) = replace(s, pat, x->r, n)
 replace(s::String, pat, r) = replace(s, pat, r, 0)
-
-function search_count(str::String, pattern, limit::Integer)
-    n = 0
-    i = a = start(str)
-    r = search(str,pattern,i)
-    j, k = first(r), last(r)+1
-    while j != 0
-        if i == a || i < k
-            n += 1
-            if n == limit break end
-            i = k
-        end
-        if k <= j; k = nextind(str,j) end
-        r = search(str,pattern,k)
-        j, k = first(r), last(r)+1
-    end
-    return n
-end
-search_count(s::String, pat) = search_count(s, pat, 0)
 
 function print_joined(io, strings, delim, last)
     i = start(strings)

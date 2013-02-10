@@ -1,12 +1,12 @@
 # formerly built-in methods. can be replaced any time.
 
-show(x) = show(OUTPUT_STREAM::Stream, x)
+show(x) = show(OUTPUT_STREAM::IO, x)
 
 print(io::IO, s::Symbol) = ccall(:jl_print_symbol, Void, (Ptr{Void}, Any,), io, s)
-show(io::IO, x::ANY) = ccall(:jl_show_any, Void, (Any, Any,), io::Stream, x)
+show(io::IO, x::ANY) = ccall(:jl_show_any, Void, (Any, Any,), io::IO, x)
 
 showcompact(io::IO, x) = show(io, x)
-showcompact(x) = showcompact(OUTPUT_STREAM::Stream, x)
+showcompact(x) = showcompact(OUTPUT_STREAM::IO, x)
 
 macro show(exs...)
     blk = expr(:block)
@@ -308,7 +308,7 @@ function show_unquoted(io::IO, ex::SymbolNode)
 end
 
 print_error(f::Function, io::IO, args...) = with_output_color(:red, io) do io
-    print("ERROR: ")
+    print(io, "ERROR: ")
     f(io, args...)
 end
 print_error(io::IO, args...) = print_error(print, io, args...)
@@ -316,23 +316,23 @@ print_error(io::IO, args...) = print_error(print, io, args...)
 show(io::IO, e::TypeError) = print_error(io) do io
     ctx = isempty(e.context) ? "" : "in $(e.context), "
     if e.expected === Bool
-        print(io, "type error: non-boolean ($(typeof(e.got))) ",
+        print(io, "type: non-boolean ($(typeof(e.got))) ",
                   "used in boolean context")
     elseif e.expected === Function && e.func === :apply && isa(e.got,AbstractKind)
-        print(io, "type error: cannot instantiate abstract type $(e.got.name)")
+        print(io, "type: cannot instantiate abstract type $(e.got.name)")
     else
         if isa(e.got,Type)
             tstr = "Type{$(e.got)}"
         else
             tstr = string(typeof(e.got))
         end
-        print(io, "type error: $(e.func): ",
+        print(io, "type: $(e.func): ",
                   "$(ctx)expected $(e.expected), ",
                   "got $tstr")
     end
 end
 
-show(io::IO, e::LoadError) = print_error(io) do io
+function show(io::IO, e::LoadError)
     show(io, e.error)
     print(io, "\nat $(e.file):$(e.line)")
 end
@@ -399,7 +399,7 @@ end
 
 function show(io::IO, mt::MethodTable)
     name = mt.name
-    println(io, "Methods for generic function ", name)
+    println(io, "# methods for generic function ", name)
     d = mt.defs
     while !is(d,())
         print(io, name)
@@ -492,7 +492,7 @@ end
 # dumptype is for displaying abstract type hierarchies like Jameson
 # Nash's wiki page: https://github.com/JuliaLang/julia/wiki/Types-Hierarchy
 
-function dumptype(io::Stream, x, n::Int, indent)
+function dumptype(io::IO, x, n::Int, indent)
     # based on Jameson Nash's examples/typetree.jl
     println(io, x)
     if n == 0   # too deeply nested
@@ -533,21 +533,21 @@ end
 
 # For abstract types, use _dumptype only if it's a form that will be called
 # interactively.
-xdump(fn::Function, io::Stream, x::AbstractKind) = dumptype(io, x, 5, "")
-xdump(fn::Function, io::Stream, x::AbstractKind, n::Int) = dumptype(io, x, n, "")
+xdump(fn::Function, io::IO, x::AbstractKind) = dumptype(io, x, 5, "")
+xdump(fn::Function, io::IO, x::AbstractKind, n::Int) = dumptype(io, x, n, "")
 
 # defaults:
-xdump(fn::Function, io::Stream, x) = xdump(xdump, io, x, 5, "")  # default is 5 levels
-xdump(fn::Function, io::Stream, x, n::Int) = xdump(xdump, io, x, n, "")
-xdump(fn::Function, args...) = xdump(fn, OUTPUT_STREAM::Stream, args...)
-xdump(io::Stream, args...) = xdump(xdump, io, args...)
-xdump(args...) = xdump(xdump, OUTPUT_STREAM::Stream, args...)
+xdump(fn::Function, io::IO, x) = xdump(xdump, io, x, 5, "")  # default is 5 levels
+xdump(fn::Function, io::IO, x, n::Int) = xdump(xdump, io, x, n, "")
+xdump(fn::Function, args...) = xdump(fn, OUTPUT_STREAM::IO, args...)
+xdump(io::IO, args...) = xdump(xdump, io, args...)
+xdump(args...) = xdump(xdump, OUTPUT_STREAM::IO, args...)
 
 
 # Here are methods specifically for dump:
 dump(io::IO, x, n::Int) = dump(io, x, n, "")
 dump(io::IO, x) = dump(io, x, 5, "")  # default is 5 levels
-dump(args...) = dump(OUTPUT_STREAM::Stream, args...)
+dump(args...) = dump(OUTPUT_STREAM::IO, args...)
 dump(io::IO, x::String, n::Int, indent) = println(io, typeof(x), " \"", x, "\"")
 dump(io::IO, x, n::Int, indent) = xdump(dump, io, x, n, indent)
 
@@ -575,7 +575,7 @@ dump(io::IO, x::BitsKind, n::Int, indent) = println(io, x.name)
 dump(io::IO, x::TypeVar, n::Int, indent) = println(io, x.name)
 
 
-showall(x) = showall(OUTPUT_STREAM::Stream, x)
+showall(x) = showall(OUTPUT_STREAM::IO, x)
 
 function showall{T}(io::IO, a::AbstractArray{T,1})
     if is(T,Any)
@@ -776,7 +776,7 @@ function show_nd(io, a::AbstractArray)
         for i = 1:nd
             ii = idxs[i]
             if size(a,i+2) > 10
-                if ii == 4 && allp(x->x==1,idxs[1:i-1])
+                if ii == 4 && all(x->x==1,idxs[1:i-1])
                     for j=i+1:nd
                         szj = size(a,j+2)
                         if szj>10 && 3 < idxs[j] <= szj-3
@@ -887,8 +887,8 @@ end
 
 print_bit_chunk(io::IO, c::Uint64) = print_bit_chunk(io, c, 64)
 
-print_bit_chunk(c::Uint64, l::Integer) = print_bit_chunk(STDOUT, c, l)
-print_bit_chunk(c::Uint64) = print_bit_chunk(STDOUT, c)
+print_bit_chunk(c::Uint64, l::Integer) = print_bit_chunk(OUTPUT_STREAM, c, l)
+print_bit_chunk(c::Uint64) = print_bit_chunk(OUTPUT_STREAM, c)
 
 function bitshow(io::IO, B::BitArray)
     if length(B) == 0
@@ -901,6 +901,6 @@ function bitshow(io::IO, B::BitArray)
     l = (@_mod64 (length(B)-1)) + 1
     print_bit_chunk(io, B.chunks[end], l)
 end
-bitshow(B::BitArray) = bitshow(STDOUT, B)
+bitshow(B::BitArray) = bitshow(OUTPUT_STREAM, B)
 
 bitstring(B::BitArray) = sprint(bitshow, B)

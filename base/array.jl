@@ -224,7 +224,6 @@ function linspace(start::Real, stop::Real, n::Integer)
     end
     a
 end
-
 linspace(start::Real, stop::Real) = linspace(start, stop, 100)
 
 logspace(start::Real, stop::Real, n::Integer) = 10.^linspace(start, stop, n)
@@ -604,19 +603,14 @@ assign!(A::Array, x, I::AbstractVector{Bool}) = assign_bool_scalar_1d(A, x, I)
 assign!(A::Array, x, I::AbstractArray{Bool}) = assign_bool_scalar_1d(A, x, I)
 
 assign!(A::Array, x, I::Real, J::AbstractVector{Bool}) = assign!(A, x, I,find(J))
-
 assign!(A::Array, x, I::AbstractVector{Bool}, J::Real) = assign!(A,x,find(I),J)
-
 assign!(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{Bool}) = assign!(A, x, find(I),find(J))
-
 assign!{T<:Real}(A::Array, x, I::AbstractVector{T}, J::AbstractVector{Bool}) = assign!(A, x, I,find(J))
-
 assign!{T<:Real}(A::Array, x, I::AbstractVector{Bool}, J::AbstractVector{T}) = assign!(A, x, find(I),J)
 
 # get (ref with a default value)
 
 get{T}(A::Array, i::Integer, default::T) = in_bounds(length(A), i) ? A[i] : default
-
 get{T}(A::Array, I::(), default::T) = Array(T, 0)
 get{T}(A::Array, I::Dims, default::T) = in_bounds(size(A), I...) ? A[I...] : default
 
@@ -627,7 +621,6 @@ function get{T}(X::Array{T}, A::Array, I::Union(Ranges, Vector{Int}), default::T
     X[last(ind)+1:length(X)] = default
     X
 end
-
 get{T}(A::Array, I::Ranges, default::T) = get(Array(T, length(I)), A, I, default)
 
 RangeVecIntList = Union((Union(Ranges, Vector{Int})...), Vector{Range1{Int}}, Vector{Range{Int}}, Vector{Vector{Int}})
@@ -638,7 +631,6 @@ function get{T}(X::Array{T}, A::Array, I::RangeVecIntList, default::T)
     X[dst...] = A[src...]
     X
 end
-
 get{T}(A::Array, I::RangeVecIntList, default::T) = get(Array(T, map(length, I)...), A, I, default)
 
 ## Dequeue functionality ##
@@ -670,14 +662,15 @@ function append!{T}(a::Array{T,1}, items::Array{T,1})
     return a
 end
 
-function grow!(a::Vector, n::Integer)
-    if n > 0
-        ccall(:jl_array_grow_end, Void, (Any, Uint), a, n)
+function resize!(a::Vector, nl::Integer)
+    l = length(a)
+    if nl > l
+        ccall(:jl_array_grow_end, Void, (Any, Uint), a, nl-l)
     else
-        if n < -length(a)
+        if nl < 0
             throw(BoundsError())
         end
-        ccall(:jl_array_del_end, Void, (Any, Uint), a, -n)
+        ccall(:jl_array_del_end, Void, (Any, Uint), a, l-nl)
     end
     return a
 end
@@ -837,45 +830,35 @@ promote_array_type{S<:Real, A<:Integer}(::Type{S}, ::Type{A}) = promote_type(S, 
 promote_array_type{S<:Integer}(::Type{S}, ::Type{Bool}) = S
 
 ./{T<:Integer,S<:Integer}(x::StridedArray{T}, y::StridedArray{S}) =
-    reshape( [ x[i] ./ y[i] for i=1:length(x) ], size(x) )
+    reshape([ x[i] ./ y[i] for i=1:length(x) ], promote_shape(size(x),size(y)))
 ./{T<:Integer}(x::Integer, y::StridedArray{T}) =
-    reshape( [ x    ./ y[i] for i=1:length(y) ], size(y) )
+    reshape([ x    ./ y[i] for i=1:length(y) ], size(y))
 ./{T<:Integer}(x::StridedArray{T}, y::Integer) =
-    reshape( [ x[i] ./ y    for i=1:length(x) ], size(x) )
+    reshape([ x[i] ./ y    for i=1:length(x) ], size(x))
+
+./{T<:Integer,S<:Integer}(x::StridedArray{ComplexPair{T}}, y::StridedArray{S}) =
+    reshape([ x[i] ./ y[i] for i=1:length(x) ], promote_shape(size(x),size(y)))
+./{T<:Integer,S<:Integer}(x::StridedArray{T}, y::StridedArray{ComplexPair{S}}) =
+    reshape([ x[i] ./ y[i] for i=1:length(x) ], promote_shape(size(x),size(y)))
+./{T<:Integer,S<:Integer}(x::StridedArray{ComplexPair{T}}, y::StridedArray{ComplexPair{S}}) =
+    reshape([ x[i] ./ y[i] for i=1:length(x) ], promote_shape(size(x),size(y)))
+./{T<:Integer}(x::Integer, y::StridedArray{ComplexPair{T}}) =
+    reshape([ x    ./ y[i] for i=1:length(y) ], size(y))
+./{T<:Integer}(x::StridedArray{ComplexPair{T}}, y::Integer) =
+    reshape([ x[i] ./ y    for i=1:length(x) ], size(x))
+./{S<:Integer,T<:Integer}(x::ComplexPair{S}, y::StridedArray{T}) =
+    reshape([ x    ./ y[i] for i=1:length(y) ], size(y))
+./{S<:Integer,T<:Integer}(x::StridedArray{S}, y::ComplexPair{T}) =
+    reshape([ x[i] ./ y    for i=1:length(x) ], size(x))
 
 # ^ is difficult, since negative exponents give a different type
 
-.^(x::StridedArray, y::StridedArray ) = reshape( [ x[i] ^ y[i] for i=1:length(x) ], size(x) )
-.^(x::Number,       y::StridedArray ) = reshape( [ x    ^ y[i] for i=1:length(y) ], size(y) )
-.^(x::StridedArray, y::Number       ) = reshape( [ x[i] ^ y    for i=1:length(x) ], size(x) )
-
-function .^{S<:Integer,T<:Integer}(A::StridedArray{S}, B::StridedArray{T})
-    F = Array(Float64, promote_shape(size(A), size(B)))
-    for i=1:length(A)
-        F[i] = float64(A[i])^float64(B[i])
-    end
-    return F
-end
-
-function .^{T<:Integer}(A::Integer, B::StridedArray{T})
-    F = similar(B, Float64)
-    for i=1:length(B)
-        F[i] = float64(A)^float64(B[i])
-    end
-    return F
-end
-
-function power_array_int_body{T}(F::StridedArray{T}, A, B)
-    for i=1:length(A)
-        F[i] = A[i]^convert(T,B)
-    end
-    return F
-end
-
-function .^{T<:Integer}(A::StridedArray{T}, B::Integer)
-    F = similar(A, B < 0 ? Float64 : promote_type(T,typeof(B)))
-    power_array_int_body(F, A, B)
-end
+.^(x::StridedArray, y::StridedArray) =
+    reshape([ x[i] ^ y[i] for i=1:length(x) ], promote_shape(size(x),size(y)))
+.^(x::Number,       y::StridedArray) =
+    reshape([ x    ^ y[i] for i=1:length(y) ], size(y))
+.^(x::StridedArray, y::Number      ) =
+    reshape([ x[i] ^ y    for i=1:length(x) ], size(x))
 
 for f in (:+, :-, :.*, :./, :div, :mod, :&, :|, :$)
     @eval begin
@@ -1140,35 +1123,38 @@ function nnz(a)
     return n
 end
 
-# returns the index of the first non-zero element, or 0 if all zeros
-function findfirst(A)
-    for i = 1:length(A)
+# returns the index of the next non-zero element, or 0 if all zeros
+function findnext(A, start::Integer)
+    for i = start:length(A)
         if A[i] != 0
             return i
         end
     end
     return 0
 end
+findfirst(A) = findnext(A,1)
 
-# returns the index of the first matching element
-function findfirst(A, v)
-    for i = 1:length(A)
+# returns the index of the next matching element
+function findnext(A, v, start::Integer)
+    for i = start:length(A)
         if A[i] == v
             return i
         end
     end
     return 0
 end
+findfirst(A,v) = findnext(A,v,1)
 
-# returns the index of the first element for which the function returns true
-function findfirst(testf::Function, A)
-    for i = 1:length(A)
+# returns the index of the next element for which the function returns true
+function findnext(testf::Function, A, start::Integer)
+    for i = start:length(A)
         if testf(A[i])
             return i
         end
     end
     return 0
 end
+findfirst(testf::Function, A) = findnext(testf, A, 1)
 
 function find(testf::Function, A::StridedArray)
     # use a dynamic-length array to store the indexes, then copy to a non-padded
@@ -1362,15 +1348,15 @@ end
 
 reduced_dims(A, region) = ntuple(ndims(A), i->(contains(region, i) ? 1 : size(A,i)))
 
-areduce(f::Function, A, region, v0) =
-    areduce(f, A, region, v0, similar(A, reduced_dims(A, region)))
+reducedim(f::Function, A, region, v0) =
+    reducedim(f, A, region, v0, similar(A, reduced_dims(A, region)))
 
 # TODO:
 # - find out why inner loop with dimsA[i] instead of size(A,i) is way too slow
 
-let areduce_cache = nothing
+let reducedim_cache = nothing
 # generate the body of the N-d loop to compute a reduction
-function gen_areduce_func(n, f)
+function gen_reducedim_func(n, f)
     ivars = { symbol(string("i",i)) for i=1:n }
     # limits and vars for reduction loop
     lo    = { symbol(string("lo",i)) for i=1:n }
@@ -1405,12 +1391,12 @@ function gen_areduce_func(n, f)
     end
 end
 
-global areduce
-function areduce(f::Function, A, region, v0, R)
+global reducedim
+function reducedim(f::Function, A, region, v0, R)
     ndimsA = ndims(A)
 
-    if is(areduce_cache,nothing)
-        areduce_cache = Dict()
+    if is(reducedim_cache,nothing)
+        reducedim_cache = Dict()
     end
 
     key = ndimsA
@@ -1425,12 +1411,12 @@ function areduce(f::Function, A, region, v0, R)
         key = (fname, ndimsA)
     end
 
-    if !has(areduce_cache,key)
-        fexpr = gen_areduce_func(ndimsA, fname)
+    if !has(reducedim_cache,key)
+        fexpr = gen_reducedim_func(ndimsA, fname)
         func = eval(fexpr)
-        areduce_cache[key] = func
+        reducedim_cache[key] = func
     else
-        func = areduce_cache[key]
+        func = reducedim_cache[key]
     end
 
     func(f, A, region, R, v0)
@@ -1439,16 +1425,16 @@ function areduce(f::Function, A, region, v0, R)
 end
 end
 
-max{T}(A::AbstractArray{T}, b::(), region) = areduce(max,A,region,typemin(T))
-min{T}(A::AbstractArray{T}, b::(), region) = areduce(min,A,region,typemax(T))
-sum{T}(A::AbstractArray{T}, region)  = areduce(+,A,region,zero(T))
-prod{T}(A::AbstractArray{T}, region) = areduce(*,A,region,one(T))
+max{T}(A::AbstractArray{T}, b::(), region) = reducedim(max,A,region,typemin(T))
+min{T}(A::AbstractArray{T}, b::(), region) = reducedim(min,A,region,typemax(T))
+sum{T}(A::AbstractArray{T}, region)  = reducedim(+,A,region,zero(T))
+prod{T}(A::AbstractArray{T}, region) = reducedim(*,A,region,one(T))
 
-all(A::AbstractArray{Bool}, region) = areduce(all,A,region,true)
-any(A::AbstractArray{Bool}, region) = areduce(any,A,region,false)
-sum(A::AbstractArray{Bool}, region) = areduce(+,A,region,0,similar(A,Int,reduced_dims(A,region)))
-sum(A::AbstractArray{Bool}) = count(A)
-sum(A::StridedArray{Bool})  = count(A)
+all(A::AbstractArray{Bool}, region) = reducedim(all,A,region,true)
+any(A::AbstractArray{Bool}, region) = reducedim(any,A,region,false)
+sum(A::AbstractArray{Bool}, region) = reducedim(+,A,region,0,similar(A,Int,reduced_dims(A,region)))
+sum(A::AbstractArray{Bool}) = sum(A, [1:ndims(A)])[1]
+sum(A::StridedArray{Bool})  = sum(A, [1:ndims(A)])[1]
 prod(A::AbstractArray{Bool}) =
     error("use all() instead of prod() for boolean arrays")
 prod(A::AbstractArray{Bool}, region) =
@@ -1604,12 +1590,6 @@ end
 
 
 ## 1 argument
-function map_to(f, dest::StridedArray, A::StridedArray)
-    for i=1:length(A)
-        dest[i] = f(A[i])
-    end
-    return dest
-end
 function map_to2(f, first, dest::StridedArray, A::StridedArray)
     dest[1] = first
     for i=2:length(A)
@@ -1626,12 +1606,6 @@ function map(f, A::StridedArray)
 end
 
 ## 2 argument
-function map_to(f, dest::StridedArray, A::StridedArray, B::StridedArray)
-    for i=1:length(A)
-        dest[i] = f(A[i], B[i])
-    end
-    return dest
-end
 function map_to2(f, first, dest::StridedArray, A::StridedArray, B::StridedArray)
     dest[1] = first
     for i=2:length(A)
@@ -1651,15 +1625,6 @@ function map(f, A::StridedArray, B::StridedArray)
 end
 
 ## N argument
-function map_to(f, dest::StridedArray, As::StridedArray...)
-    n = length(As[1])
-    i = 1
-    ith = a->a[i]
-    for i=1:n
-        dest[i] = f(map(ith, As)...)
-    end
-    return dest
-end
 function map_to2(f, first, dest::StridedArray, As::StridedArray...)
     n = length(As[1])
     i = 1
@@ -1719,7 +1684,6 @@ function transpose{T<:Union(Float64,Float32,Complex128,Complex64)}(A::Matrix{T})
 end
 
 ctranspose{T<:Real}(A::StridedVecOrMat{T}) = transpose(A)
-
 ctranspose(x::StridedVecOrMat) = transpose(x)
 
 transpose(x::StridedVector) = [ x[j] for i=1, j=1:size(x,1) ]
@@ -1727,82 +1691,6 @@ transpose(x::StridedMatrix) = [ x[j,i] for i=1:size(x,2), j=1:size(x,1) ]
 
 ctranspose{T<:Number}(x::StridedVector{T}) = [ conj(x[j]) for i=1, j=1:size(x,1) ]
 ctranspose{T<:Number}(x::StridedMatrix{T}) = [ conj(x[j,i]) for i=1:size(x,2), j=1:size(x,1) ]
-
-## Permute ##
-
-let permute_cache = nothing, stridenames::Array{Any,1} = {}
-global permute
-function permute(A::StridedArray, perm)
-    dimsA = size(A)
-    ndimsA = length(dimsA)
-    dimsP = ntuple(ndimsA, i->dimsA[perm[i]])
-    P = similar(A, dimsP)
-    ranges = ntuple(ndimsA, i->(1:dimsP[i]))
-    while length(stridenames) < ndimsA
-        push!(stridenames, gensym())
-    end
-
-    #calculates all the strides
-    strides = [ stride(A, perm[dim]) for dim = 1:length(perm) ]
-
-    #Creates offset, because indexing starts at 1
-    offset = 0
-    for i in strides
-        offset+=i
-    end
-    offset = 1-offset
-
-    if isa(A,SubArray)
-        offset += (A.first_index-1)
-        A = A.parent
-    end
-
-    function permute_one(ivars)
-        len = length(ivars)
-        counts = { symbol(string("count",i)) for i=1:len}
-        toReturn = cell(len+1,2)
-        for i = 1:length(toReturn)
-            toReturn[i] = nothing
-        end
-
-        tmp = counts[end]
-        toReturn[len+1] = quote
-            ind = 1
-            $tmp = $(stridenames[len])
-        end
-
-        #inner most loop
-        toReturn[1] = quote
-            P[ind] = A[+($(counts...))+offset]
-            ind+=1
-            $(counts[1]) += $(stridenames[1])
-        end
-        for i = 1:len-1
-            tmp = counts[i]
-            val = i
-            toReturn[(i+1)] = quote
-                $tmp = $(stridenames[val])
-            end
-            tmp2 = counts[i+1]
-            val = i+1
-            toReturn[(i+1)+(len+1)] = quote
-                 $tmp2 += $(stridenames[val])
-            end
-        end
-        toReturn
-    end
-
-    if is(permute_cache,nothing)
-	permute_cache = Dict()
-    end
-
-    gen_cartesian_map(permute_cache, permute_one, ranges,
-                      tuple(:A, :P, :perm, :offset, stridenames[1:ndimsA]...),
-                      A, P, perm, offset, strides...)
-
-    return P
-end
-end # let
 
 # set-like operators for vectors
 # These are moderately efficient, preserve order, and remove dupes.
@@ -1856,5 +1744,3 @@ end
 symdiff(a) = a
 symdiff(a, b) = union(setdiff(a,b), setdiff(b,a))
 symdiff(a, b, rest...) = symdiff(a, symdiff(b, rest...))
-
-

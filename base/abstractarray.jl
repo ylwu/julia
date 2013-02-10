@@ -1,5 +1,3 @@
-## abstractarray.jl : Generic array interfaces.
-
 ## Type aliases for convenience ##
 
 typealias AbstractVector{T} AbstractArray{T,1}
@@ -142,21 +140,21 @@ function reshape(a::AbstractArray, dims::Dims)
         error("reshape: invalid dimensions")
     end
     b = similar(a, dims)
-    for i=1:length(a)
+    for i = 1:length(a)
         b[i] = a[i]
     end
     return b
 end
 reshape(a::AbstractArray, dims::Int...) = reshape(a, dims)
 
-vec(a::AbstractArray) = reshape(a,max(size(a)))
+vec(a::AbstractArray) = reshape(a,length(a))
 
 function squeeze(A::AbstractArray, dims)
     d = ()
     for i in 1:ndims(A)
         if contains(dims,i)
             if size(A,i) != 1
-                error("squeezed dims should all be size 1")
+                error("squeezed dims must all be size 1")
             end
         else
             d = tuple(d..., size(A,i))
@@ -963,14 +961,14 @@ for (f, op) = ((:cummin, :min), (:cummax, :max))
     @eval ($f)(A::AbstractArray) = ($f)(A, 1)
 end
 
-## ipermute in terms of permute ##
+## ipermutedims in terms of permutedims ##
 
-function ipermute(A::AbstractArray,perm)
+function ipermutedims(A::AbstractArray,perm)
     iperm = Array(Int,length(perm))
     for i = 1:length(perm)
 	iperm[perm[i]] = i
     end
-    return permute(A,iperm)
+    return permutedims(A,iperm)
 end
 
 ## Other array functions ##

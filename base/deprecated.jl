@@ -51,6 +51,7 @@ end
 @deprecate  rot90         rotl90
 @deprecate  chars         collect
 @deprecate  elements      collect
+@deprecate  pairs         collect
 @deprecate  strcat        string
 @deprecate  iswalnum      isalnum
 @deprecate  iswalpha      isalpha
@@ -67,6 +68,42 @@ end
 @deprecate  iswxdigit     isxdigit
 @deprecate  copy_to       copy!
 @deprecate  assign        assign!
+@deprecate  countp        count
+@deprecate  anyp          any
+@deprecate  allp          all
+@deprecate  resize        sizehint
+@deprecate  permute       permutedims
+@deprecate  ipermute      ipermutedims
+@deprecate  is_hex_digit  isxdigit
+@deprecate  read_from     readsfrom
+@deprecate  write_to      writesto
+@deprecate  download_file download
+@deprecate  histc         hist
+@deprecate  map_to        map!
+@deprecate  rotl          rol
+@deprecate  rotr          ror
+@deprecate  flipbits      (~)
+@deprecate  cor_pearson   cor
+@deprecate  cov_pearson   cov
+@deprecate  areduce       reducedim
+
+export grow!
+function grow!(a, d)
+    warn_once("grow!(array,delta) is deprecated, use resize!(array,newsize) instead.")
+    resize!(a, length(a)+d)
+end
+
+export keytype
+function keytype(a::Associative)
+    warn_once("keytype(assoc) is deprecated, use eltype(assoc)[1] instead.")
+    eltype(a)[1]
+end
+
+export valtype
+function valtype(a::Associative)
+    warn_once("valtype(assoc) is deprecated, use eltype(assoc)[2] instead.")
+    eltype(a)[2]
+end
 
 export randi
 function randi(n,x...)
@@ -83,6 +120,24 @@ end
 function squeeze(A::AbstractArray)
     warn_once("squeeze(A) is deprecated, use squeeze(A, dims) specifying the dimensions to remove.")
     squeeze(A, find([size(A)...].==1))
+end
+
+export getenv, hasenv, setenv, unsetenv
+function getenv(var::String)
+    warn_once("getenv(var) is deprecated, use ENV[var] instead.")
+    ENV[var]
+end
+function hasenv(var::String)
+    warn_once("hasenv(var) is deprecated, use has(ENV,var) instead.")
+    has(ENV, var)
+end
+function setenv(var::String, val::String)
+    warn_once("setenv(var,val) is deprecated, use ENV[var]=val instead.")
+    ENV[var] = val
+end
+function unsetenv(var::String)
+    warn_once("unsetenv(var) is deprecated, use delete!(ENV,var) instead.")
+    delete!(ENV, var)
 end
 
 # discontinued functions

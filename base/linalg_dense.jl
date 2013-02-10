@@ -1,11 +1,8 @@
 # Linear algebra functions for dense matrices in column major format
 
 scale!(X::Array{Float32}, s::Real) = BLAS.scal!(length(X), float32(s), X, 1)
-
 scale!(X::Array{Float64}, s::Real) = BLAS.scal!(length(X), float64(s), X, 1)
-
 scale!(X::Array{Complex64}, s::Real) = (ccall(("sscal_",Base.libblas_name), Void, (Ptr{BlasInt}, Ptr{Float32}, Ptr{Complex64}, Ptr{BlasInt}), &(2*length(X)), &s, X, &1); X)
-
 scale!(X::Array{Complex128}, s::Real) = (ccall(("dscal_",Base.libblas_name), Void, (Ptr{BlasInt}, Ptr{Float64}, Ptr{Complex128}, Ptr{BlasInt}), &(2*length(X)), &s, X, &1); X)
 
 #Test whether a matrix is positive-definite
@@ -389,7 +386,7 @@ end
 
 \{T<:BlasFloat}(B::BunchKaufman{T}, R::StridedVecOrMat{T}) =
     LAPACK.sytrs!(B.UL, B.LD, B.ipiv, copy(R))
-    
+
 type CholeskyDense{T<:BlasFloat} <: Factorization{T}
     LR::Matrix{T}
     UL::BlasChar
@@ -761,8 +758,8 @@ function svdt{T<:BlasFloat}(A::StridedMatrix{T},vecs::Bool,thin::Bool)
 end
 
 svdt{T<:Integer}(x::StridedMatrix{T},vecs,thin) = svdt(float64(x),vecs,thin)
-svdt(A) = svdt(A,true,false)
-svdt(A, thin::Bool) = svdt(A,true,thin)
+svdt(A::StridedMatrix) = svdt(A,true,false)
+svdt(A::StridedMatrix, thin::Bool) = svdt(A,true,thin)
 
 svdt(x::Number,vecs::Bool,thin::Bool) = vecs ? (x==0?one(x):x/abs(x),abs(x),one(x)) : ([],abs(x),[])
 
@@ -771,10 +768,43 @@ function svd(x::StridedMatrix,vecs::Bool,thin::Bool)
     return (u, s, vt')
 end
 
-svd(A) = svd(A,true,false)
-svd(A, thin::Bool) = svd(A,true,thin)
+svd(A::StridedMatrix) = svd(A,true,false)
+svd(A::StridedMatrix, thin::Bool) = svd(A,true,thin)
 
-svdvals(A) = svdt(A,false,true)[2]
+svdvals(A::StridedMatrix) = svdt(A,false,true)[2]
+
+# Generalized svd
+type GSVD{T} <: Factorization{T}
+    U::Matrix{T}
+    V::Matrix{T}
+    Q::Matrix{T}
+    a::Vector #{eltype(real(one(T)))}
+    b::Vector #{eltype(real(one(T)))}
+    k::Int
+    l::Int
+    R::Matrix{T}
+end
+function svd(A::StridedMatrix, B::StridedMatrix)
+    U, V, Q, a, b, k, l, R = LAPACK.ggsvd!('U', 'V', 'Q', copy(A), copy(B))
+    return GSVD(U, V, Q, a, b, k, l, R)
+end
+function factors{T}(obj::GSVD{T})
+    m = size(obj.U, 1)
+    p = size(obj.V, 1)
+    n = size(obj.Q, 1)
+    if m - obj.k - obj.l >= 0
+        D1 = [eye(T, obj.k) zeros(T, obj.k, obj.l); zeros(T, obj.l, obj.k) diagm(obj.a[obj.k + 1:obj.k + obj.l]); zeros(T, m - obj.k - obj.l, obj.k + obj.l)]
+        D2 = [zeros(T, obj.l, obj.k) diagm(obj.b[obj.k + 1:obj.k + obj.l]); zeros(T, p - obj.l, obj.k + obj.l)]
+        R0 = [zeros(T, obj.k + obj.l, n - obj.k - obj.l) obj.R]
+    else
+        D1 = [eye(T, m, obj.k) [zeros(T, obj.k, m - obj.k); diagm(a[obj.k + 1:m])] zeros(T, m, obj.k + obj.l - m)]
+        D2 = [zeros(T, p, obj.k) [diagm(b[obj.k + 1:m]); zeros(T, obj.k + p - m, m - obj.k)] [zeros(T, m - obj.k, obj.k + obj.l - m); eye(T, obj.k + p - m, obj.k + obj.l - m)]]
+        R0 = [zeros(T, obj.k + obj.l, n - obj.k - obj.l) obj.R]
+    end
+    return obj.U, obj.V, obj.Q, D1, D2, R0
+end
+
+svdvals(A::StridedMatrix, B::StridedMatrix) = LAPACK.ggsvd!('N', 'N', 'N', copy(A), copy(B))[4:5]
 
 schur{T<:BlasFloat}(A::StridedMatrix{T}) = LAPACK.gees!('V', copy(A))
 
